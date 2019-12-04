@@ -14,7 +14,7 @@ setup(name='nuproxy helpers',
             ],
         #These are used instead of bin packages
         entry_points = {
-            'console_scripts': ['collection_csv=nuproxy.save_collection_as_csv:main'],
+            'console_scripts': ['collection_csv=nuproxy.commandline:main'],
             },
         include_package_data=True,
         zip_safe=False)
