@@ -1,6 +1,7 @@
-import nuproxy
+from nuproxy import helpers 
 import sys
-def save_collection_as_csv(output_fields, outputfile, environment, collection_id):
+
+def main():
     """ Example showing how to save a collection as a csv
     
     ## Example Collections    
@@ -10,12 +11,6 @@ def save_collection_as_csv(output_fields, outputfile, environment, collection_id
     ### staging, berkeley
     collection_id = "52c177f6-97d2-4f58-a57e-2e87dc297aa8"
     """
-    
-    results = nuproxy.get_search_results(environment, nuproxy.build_collection_query(collection_id)) 
-    data = nuproxy.get_results_as_list(results, output_fields) 
-    nuproxy.save_as_csv(output_fields, data, outputfile)
-
-if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser()
@@ -26,7 +21,7 @@ if __name__ == '__main__':
                         - thumbnail_url
                         - permalink
                         - subject""")
-    parser.add_argument("-o", action="store", dest="output_file",
+    parser.add_argument("-o", action="store", dest="outputfile",
                         help="Output File")
     parser.add_argument("-e", action="store", dest="environment", default="production",
                         help="environment 'production' or 'staging' ")
@@ -35,6 +30,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # kick it off
-    save_collection_as_csv(args.fields, args.output_file, args.environment, args.collection_id)
+    results = helpers.get_search_results(args.environment, helpers.build_collection_query(args.collection_id)) 
+    data = helpers.get_results_as_list(results, args.fields) 
+    helpers.save_as_csv(args.fields, data, args.outputfile)
+
+if __name__ == '__main__':
+    main()
     
     
