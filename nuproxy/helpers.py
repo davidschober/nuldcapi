@@ -70,6 +70,9 @@ def get_results_as_list(search_results, fields):
                 field = 'title'
                 field_data = work.get('_source').get(field) 
                 work_metadata.append('; '.join(field_data.get('alternate')))
+            elif field == 'permalink':
+                # prepend the resolver url to the front of the ark
+                work_metadata.append('https://n2t.net/'+field_data)
             elif field == 'thumbnail_url':
                 # This just makes resolve to a jpg. I should make this configurable at the commandline
                 work_metadata.append(field_data+'/full/!300,300/0/default.jpg')

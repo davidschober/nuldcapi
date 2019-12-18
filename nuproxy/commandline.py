@@ -1,4 +1,4 @@
-from nuproxy import helpers 
+from . import helpers 
 import sys
 
 def main():
@@ -15,17 +15,19 @@ def main():
     
     parser = argparse.ArgumentParser()
     # parser.add_argument("-r","--raw", help="dump raw output")
-    parser.add_argument("-f", action="append", dest="fields",
+    parser.add_argument("-f", "--field", action="append", dest="fields",
                         default=['id', 'accession_number', 'title'],
                         help="""Additional field to include in CSV, default fields include id, title, accession_number repeatable. Additional fields include
-                        - thumbnail_url
-                        - permalink
-                        - subject""")
-    parser.add_argument("-o", action="store", dest="outputfile",
+                        \n - thumbnail_url
+                        \n - permalink
+                        \n - subject
+                        \n - iiif_manifest
+                        """)
+    parser.add_argument("-o", "--out", action="store", dest="outputfile", required=True,
                         help="Output File")
-    parser.add_argument("-e", action="store", dest="environment", default="production",
-                        help="environment 'production' or 'staging' ")
-    parser.add_argument("-c", action="store", dest = "collection_id", help="collection ID")
+    parser.add_argument("-e", "--environment", action="store", dest="environment", default="production", required=True,
+            help="environment 'production' or 'staging'. Default: production")
+    parser.add_argument("-c", "--collection", action="store", dest = "collection_id", required=True, help="collection ID")
     
     args = parser.parse_args()
 
