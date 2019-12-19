@@ -81,9 +81,11 @@ def get_results_as_list(search_results, fields):
                 work_metadata.append(field_data.get('label', field_data))
             elif type(field_data) is list:
                 # create a flattened list of items like a list of subjects, return the full item if there's 
-                # no label. Join it by a semi-colon. 
-                flattened_list = [item.get('label', item) for item in field_data]
-                work_metadata.append(';'.join(flattened_list))
+                # no label. Join it by a semi-colon. Take into account that some items are dicts with labels
+                # others are just a list of strings. I haven't found anything else. 
+                 
+                flattened_list = [item.get('label', item) if type(item) is dict else item for item in field_data]
+                work_metadata.append(' | '.join(flattened_list))
             else:
                 # These should be straight strings. 
                 work_metadata.append(field_data)
