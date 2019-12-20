@@ -1,5 +1,6 @@
 import elasticsearch
 from elasticsearch import helpers
+import unicodecsv as csv
 
 def get_fields_from_string(field_string):
     """returns a list from a comma separated string"""
@@ -9,7 +10,6 @@ def get_search_results(environment, query):
     """Takes an environment and a query and returns an iterable of all results
     using the 'scan' function in es.helpers. Scan is an efficient pager.
 
-    >>> get_search_results('staging', query)
     """
 
     # pick an environment 
@@ -47,53 +47,97 @@ def build_collection_query(collection_id):
                     }
                 },
             }
-    
+
     return query 
+
+def flatten_metadata(source_dict, field):
+    """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
+    Special cases are handled. It returns a simple string 
+
+
+    ## Example
+
+    >>> source = {'title':{'primary':['title1','title2']}, 
+    ...          'thumbnail_url':'http://thumb', 
+    ...          'list_field':['1','2','3'],
+    ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
+    ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
+    ...          'string':'string'}
+    
+
+    >>> flatten_metadata(source, 'title')
+    'title1 | title2'
+
+
+    >>> flatten_metadata(source, 'dict_field')
+    'dict_label'
+   
+    >>> flatten_metadata(source, 'string')
+    'string'
+    
+    >>> flatten_metadata(source, 'thumbnail_url')
+    'http://thumb/full/!300,300/0/default.jpg'
+    
+    >>> flatten_metadata(source, 'list_of_dicts')
+    'label1 | label2'
+
+    >>> flatten_metadata(source, 'list_field')
+    '1 | 2 | 3'
+
+    """
+
+    field_data = source_dict.get(field)
+
+    if field == 'title':
+        # Titles are special, if you request just 'title' get primary.
+        # there may be more than one title, join it by a semicolon
+        field_metadata = ' | '.join(field_data.get('primary'))
+
+    elif field == 'alternate-title':
+        # grab the alternate title. Hardcoded this one. It's a special case
+        field = 'title'
+        field_data = work.get('_source').get(field) 
+        field_metadata = ' | '.join(field_data.get('alternate'))
+
+    elif field == 'permalink':
+        # prepend the resolver url to the front of the ark
+        field_metadata = 'https://n2t.net/'+field_data
+
+    elif field == 'thumbnail_url':
+        # This just makes resolve to a jpg. I should make this configurable at the commandline
+        field_metadata = field_data+'/full/!300,300/0/default.jpg'
+
+    elif type(field_data) is dict:
+        # print(field_data)
+        field_metadata = field_data.get('label', field_data)
+
+    elif type(field_data) is list:
+        # create a flattened list of items like a list of subjects, return the full item if there's 
+        # no label. Join it by a semi-colon. Take into account that some items are dicts with labels
+        # others are just a list of strings. I haven't found anything else. 
+
+        field_metadata = ' | '.join([item.get('label', item) if type(item) is dict else item for item in field_data])
+
+    else:
+        # These should be straight strings. 
+        field_metadata = field_data
+
+    return field_metadata
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
     This function flattens all nested data ham-fistedly, favoring labels over URIs for
     all metadata. Any list elements are separated by a semi-colon and turned to a string. 
+
     """
 
-    # loop through items and get the important bits, stitch lists together with semicolons
     for work in search_results:
-        work_metadata = []
-        for field in fields:
-            field_data = work.get('_source').get(field) 
-            # Titles are special, if you request just 'title' get primary.
-            if field == 'title':
-                # there may be more than one title, join it by a semicolon
-                work_metadata.append('; '.join(field_data.get('primary')))
-            elif field == 'alternate-title':
-                # grab the alternate title. Hardcoded this one. It's a special case
-                field = 'title'
-                field_data = work.get('_source').get(field) 
-                work_metadata.append('; '.join(field_data.get('alternate')))
-            elif field == 'permalink':
-                # prepend the resolver url to the front of the ark
-                work_metadata.append('https://n2t.net/'+field_data)
-            elif field == 'thumbnail_url':
-                # This just makes resolve to a jpg. I should make this configurable at the commandline
-                work_metadata.append(field_data+'/full/!300,300/0/default.jpg')
-            elif type(field_data) is dict:
-                # print(field_data)
-                work_metadata.append(field_data.get('label', field_data))
-            elif type(field_data) is list:
-                # create a flattened list of items like a list of subjects, return the full item if there's 
-                # no label. Join it by a semi-colon. Take into account that some items are dicts with labels
-                # others are just a list of strings. I haven't found anything else. 
-                 
-                flattened_list = [item.get('label', item) if type(item) is dict else item for item in field_data]
-                work_metadata.append(' | '.join(flattened_list))
-            else:
-                # These should be straight strings. 
-                work_metadata.append(field_data)
-        # build the list. I think this should be a generator
-        yield work_metadata
+        #Get the metadata dictionary
+        work_metadata = work.get('_source')
+        yield [flatten_metadata(work_metadata, field) for field in fields]
 
 def save_as_csv(headers, data, output_file):
-    import unicodecsv as csv
+    """outputs a CSV using unicodecsv"""
     with open(output_file, 'wb') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(headers)
