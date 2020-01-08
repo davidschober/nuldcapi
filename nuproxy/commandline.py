@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
     # parser.add_argument("-r","--raw", help="dump raw output")
     parser.add_argument("-f", "--field", action="append", dest="fields",
-                        default=['id', 'accession_number', 'title'],
+                        default=['id', 'accession_number', 'primary-title'],
                         help="""Additional field to include in CSV, default fields include id, title, accession_number repeatable. Additional fields include
                         \n - thumbnail_url
                         \n - permalink
