@@ -66,9 +66,8 @@ def flatten_metadata(source_dict, field):
     
 
     >>> flatten_metadata(source, 'title')
-    'title1 | title2'
-
-
+    '{'primary':['title1','title2']}'
+    
     >>> flatten_metadata(source, 'dict_field')
     'dict_label'
    
