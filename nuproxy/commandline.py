@@ -40,8 +40,8 @@ def main():
     if args.allfields:
         # If someone threw the flag, get all the fields. 
         fields = helpers.get_all_fields_from_set(helpers.get_search_results(args.environment, query))
-
         fields.sort()
+        
     else:
         fields = args.fields
     results = helpers.get_search_results(args.environment, query) 
