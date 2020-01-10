@@ -87,7 +87,13 @@ def flatten_metadata(source_dict, field):
 
     field_data = source_dict.get(field)
 
-    if field == 'primary-title':
+    if field == 'title':
+        #join a bunch of title together, regardless of primary or alternate
+        # Not working        
+        all_titles = [title for title_lists in field_data.values() for title in title_lists]
+        field_metadata = ' | '.join(all_titles)
+
+    elif field == 'primary-title':
         field = 'title'
         # Titles are special, if you request just 'title' get primary.
         # there may be more than one title, join it by a semicolon
