@@ -153,7 +153,7 @@ def get_all_fields_from_set(search_results):
     into a fresh query result to flatten the results for a CSV. It is not as efficient as 
     passing fields directly as you have to make two queries
     """
-
+    
     return list(set([field for work in search_results for field in work.get('_source').keys()]))
 
 def save_as_csv(headers, data, output_file):
