@@ -57,7 +57,7 @@ def flatten_metadata(source_dict, field):
 
     ## Example
 
-    >>> source = {'title':{'primary':['title1','title2']}, 
+    >>> source = {'title':{'primary':['title1','title2'],'alternate':['alt1','alt2']}, 
     ...          'thumbnail_url':'http://thumb', 
     ...          'list_field':['1','2','3'],
     ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
@@ -66,8 +66,11 @@ def flatten_metadata(source_dict, field):
     
 
     >>> flatten_metadata(source, 'title')
-    '{'primary':['title1','title2']}'
+    'title1 | title2 | alt1 | alt2'
     
+    >>> flatten_metadata(source, 'primary-title')
+    'title1 | title2'
+
     >>> flatten_metadata(source, 'dict_field')
     'dict_label'
    
@@ -89,7 +92,8 @@ def flatten_metadata(source_dict, field):
 
     if field == 'title':
         #join a bunch of title together, regardless of primary or alternate
-        # Not working        
+        # Note, this could work to join any multi-dimensional field hard, but I'm not 
+        # That makes sense. 
         all_titles = [title for title_lists in field_data.values() for title in title_lists]
         field_metadata = ' | '.join(all_titles)
 
@@ -137,7 +141,6 @@ def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
     This function flattens all nested data ham-fistedly, favoring labels over URIs for
     all metadata. Any list elements are separated by a semi-colon and turned to a string. 
-    >>> results = {}
     """
 
     for work in search_results:
