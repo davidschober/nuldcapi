@@ -30,7 +30,7 @@ def main():
             action="store_true", 
             dest="allfields", 
             help="This will pull all fields available in the set. This may take some time with a large collection.")
-    parser.add_argument("-e", "--environment", action="store", dest="environment", default="production", required=True,
+    parser.add_argument("-e", "--environment", action="store", dest="environment", default="production",
             help="environment 'production' or 'staging'. Default: production")
     parser.add_argument("-c", "--collection", action="store", dest = "collection_id", required=True, help="collection ID")
     
