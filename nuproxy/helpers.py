@@ -18,7 +18,8 @@ def get_search_results(environment, query):
     if environment == 'staging':
         proxy = 'https://bxzhc8nucl.execute-api.us-east-1.amazonaws.com/latest/search/'
     # create an es instance 
-    es = elasticsearch.Elasticsearch(proxy, send_get_body_as='POST')
+    # added ssl and port 443 to see if it solves timeout issue
+    es = elasticsearch.Elasticsearch(proxy, send_get_body_as='POST', timeout=30, max_retries=10, retry_on_timeout=True)
     # return the results 
     return helpers.scan(es, index='common', query=query)
 
@@ -29,7 +30,7 @@ def build_collection_query(collection_id):
     """
 
     query = {
-            "size": "100",
+            "size": "1000",
             "query": {
                 "bool": {
                     "must": [
