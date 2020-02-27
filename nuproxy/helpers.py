@@ -96,6 +96,7 @@ def flatten_metadata(source_dict, field):
     """
 
     field_data = source_dict.get(field)
+    field_metadata = field_data
 
     if field == 'title':
         #join a bunch of title together, regardless of primary or alternate
@@ -104,15 +105,15 @@ def flatten_metadata(source_dict, field):
         field_metadata  = [title for title_lists in field_data.values() for title in title_lists]
         
 
-    elif field == 'permalink':
+    if field == 'permalink':
         # prepend the resolver url to the front of the ark
         field_metadata = f"https://n2t.net/{field_data}"
 
-    elif field == 'thumbnail_url':
+    if field == 'thumbnail_url':
         # This just makes resolve to a jpg. I should make this configurable at the commandline
         field_metadata = f"{field_data}/full/!300,300/0/default.jpg"
 
-    elif '-json' in field:
+    if '-json' in field:
         # Get pseudo json back and separate lists with pipes. This ugly bit is for a prototype of meadow
         field =  field.rstrip('-json')
         if type(field_data) is list:
@@ -120,7 +121,7 @@ def flatten_metadata(source_dict, field):
         else:
             field_metadata = source_dict.get(field)
 
-    elif '-values' in field:
+    if '-values' in field:
         # Get pseudo json back and separate lists with pipes. This ugly bit is for a prototype of meadow
         # I think I can make this generic
         field =  field.rstrip('-values')
@@ -132,7 +133,7 @@ def flatten_metadata(source_dict, field):
         else:
             field_metadata = field_data
 
-    elif '.' in field:
+    if '.' in field:
         # This allows you to pull from nested 
         field, key = field.split('.')
         field_data = source_dict.get(field)
@@ -143,9 +144,6 @@ def flatten_metadata(source_dict, field):
             field_metadata = format_for_csv(field_data.get(key))
         else:
             field_metadata = field_data
-    else:
-        # These should be straight strings. 
-        field_metadata = field_data
 
     return format_for_csv(field_metadata)
 
