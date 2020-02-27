@@ -65,11 +65,11 @@ def flatten_metadata(source_dict, field):
     ## Example
 
     >>> source = {'title':{'primary':['title1','title2'],'alternate':['alt1','alt2']}, 
-            ...          'thumbnail_url':'http://thumb', 
-            ...          'list_field':['1','2','3'],
-            ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
-            ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
-            ...          'string':'string'}
+    ...          'thumbnail_url':'http://thumb', 
+    ...          'list_field':['1','2','3'],
+    ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
+    ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
+    ...          'string':'string'}
 
 
     >>> flatten_metadata(source, 'title')
