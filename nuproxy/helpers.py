@@ -6,10 +6,16 @@ def get_fields_from_string(field_string):
     """returns a list from a comma separated string"""
     return [f.strip() for f in field_string.split(',')]
 
+def format_for_csv(item):
+    # returns a list of items as a string delimited by the delimiter
+    if type(item) is list: 
+        return ' | '.join([str(i) for i in item])
+    else:
+        return str(item)
+
 def get_search_results(environment, query):
     """Takes an environment and a query and returns an iterable of all results
     using the 'scan' function in es.helpers. Scan is an efficient pager.
-
     """
 
     # pick an environment 
@@ -69,7 +75,7 @@ def flatten_metadata(source_dict, field):
     >>> flatten_metadata(source, 'title')
     'title1 | title2 | alt1 | alt2'
     
-    >>> flatten_metadata(source, 'primary-title')
+    >>> flatten_metadata(source, 'title.primary')
     'title1 | title2'
 
     >>> flatten_metadata(source, 'dict_field')
@@ -96,22 +102,7 @@ def flatten_metadata(source_dict, field):
         # Note, this could work to join any multi-dimensional field hard, but I'm not 
         # That makes sense. 
         all_titles = [title for title_lists in field_data.values() for title in title_lists]
-        field_metadata = ' | '.join(all_titles)
-
-    elif field == 'primary-title':
-        field = 'title'
-        # Titles are special, if you request just 'title' get primary.
-        # there may be more than one title, join it by a semicolon
-        
-        field_data = source_dict.get(field)
-        field_metadata = ' | '.join(field_data.get('primary'))
-
-    elif field == 'alternate-title':
-        # grab the alternate title. Hardcoded this one. It's a special case
-        field = 'title'
-
-        field_data = source_dict.get(field)
-        field_metadata = ' | '.join(field_data.get('alternate'))
+        field_metadata = all_titles
 
     elif field == 'permalink':
         # prepend the resolver url to the front of the ark
@@ -120,6 +111,38 @@ def flatten_metadata(source_dict, field):
     elif field == 'thumbnail_url':
         # This just makes resolve to a jpg. I should make this configurable at the commandline
         field_metadata = f"{field_data}/full/!300,300/0/default.jpg"
+
+    elif '-json' in field:
+        # Get pseudo json back and separate lists with pipes. This ugly bit is for a prototype of meadow
+        field =  field.rstrip('-json')
+        if type(field_data) is list:
+            field_metadata = [json for json in source_dict.get(field)]
+        else:
+            field_metadata = source_dict.get(field)
+
+    elif '-values' in field:
+        # Get pseudo json back and separate lists with pipes. This ugly bit is for a prototype of meadow
+        # I think I can make this generic
+        field =  field.rstrip('-values')
+        field_data = source_dict.get(field)
+        if type(field_data) is list:
+            field_metadata = [tuple(meta.values()) for meta in source_dict.get(field)]
+        elif type(field_data) is dict:
+            field_metadata = list(field_data.values())
+        else:
+            field_metadata = field_data
+
+    elif '.' in field:
+        # This allows you to pull from nested 
+        field, key = field.split('.')
+        field_data = source_dict.get(field)
+
+        if type(field_data) is list:
+            field_metadata = [meta.get(key) for meta in field_data]
+        elif type(field_data) is dict:
+            field_metadata = format_for_csv(field_data.get(key))
+        else:
+            field_metadata = field_data
 
     elif type(field_data) is dict:
         # print(field_data)
@@ -130,13 +153,13 @@ def flatten_metadata(source_dict, field):
         # no label. Join it by a semi-colon. Take into account that some items are dicts with labels
         # others are just a list of strings. I haven't found anything else. 
 
-        field_metadata = ' | '.join([str(item.get('label', item)) if type(item) is dict else str(item) for item in field_data])
+        field_metadata = format_for_csv([str(item.get('label', item)) if type(item) is dict else str(item) for item in field_data])
 
     else:
         # These should be straight strings. 
         field_metadata = field_data
 
-    return field_metadata
+    return format_for_csv(field_metadata)
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
