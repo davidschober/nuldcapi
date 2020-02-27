@@ -65,29 +65,29 @@ def flatten_metadata(source_dict, field):
     ## Example
 
     >>> source = {'title':{'primary':['title1','title2'],'alternate':['alt1','alt2']}, 
-    ...          'thumbnail_url':'http://thumb', 
-    ...          'list_field':['1','2','3'],
-    ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
-    ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
-    ...          'string':'string'}
-    
+            ...          'thumbnail_url':'http://thumb', 
+            ...          'list_field':['1','2','3'],
+            ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
+            ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
+            ...          'string':'string'}
+
 
     >>> flatten_metadata(source, 'title')
     'title1 | title2 | alt1 | alt2'
-    
+
     >>> flatten_metadata(source, 'title.primary')
     'title1 | title2'
 
-    >>> flatten_metadata(source, 'dict_field')
+    >>> flatten_metadata(source, 'dict_field.label')
     'dict_label'
-   
+
     >>> flatten_metadata(source, 'string')
     'string'
-    
+
     >>> flatten_metadata(source, 'thumbnail_url')
     'http://thumb/full/!300,300/0/default.jpg'
-    
-    >>> flatten_metadata(source, 'list_of_dicts')
+
+    >>> flatten_metadata(source, 'list_of_dicts.label')
     'label1 | label2'
 
     >>> flatten_metadata(source, 'list_field')
@@ -101,8 +101,8 @@ def flatten_metadata(source_dict, field):
         #join a bunch of title together, regardless of primary or alternate
         # Note, this could work to join any multi-dimensional field hard, but I'm not 
         # That makes sense. 
-        all_titles = [title for title_lists in field_data.values() for title in title_lists]
-        field_metadata = all_titles
+        field_metadata  = [title for title_lists in field_data.values() for title in title_lists]
+        
 
     elif field == 'permalink':
         # prepend the resolver url to the front of the ark
@@ -143,18 +143,6 @@ def flatten_metadata(source_dict, field):
             field_metadata = format_for_csv(field_data.get(key))
         else:
             field_metadata = field_data
-
-    elif type(field_data) is dict:
-        # print(field_data)
-        field_metadata = field_data.get('label', field_data)
-
-    elif type(field_data) is list:
-        # create a flattened list of items like a list of subjects, return the full item if there's 
-        # no label. Join it by a semi-colon. Take into account that some items are dicts with labels
-        # others are just a list of strings. I haven't found anything else. 
-
-        field_metadata = format_for_csv([str(item.get('label', item)) if type(item) is dict else str(item) for item in field_data])
-
     else:
         # These should be straight strings. 
         field_metadata = field_data
@@ -177,7 +165,7 @@ def get_all_fields_from_set(search_results):
     into a fresh query result to flatten the results for a CSV. It is not as efficient as 
     passing fields directly as you have to make two queries
     """
-    
+
     return list(set([field for work in search_results for field in work.get('_source').keys()]))
 
 def save_as_csv(headers, data, output_file):
