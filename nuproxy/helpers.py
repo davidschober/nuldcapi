@@ -20,9 +20,12 @@ def get_search_results(environment, query):
 
     # pick an environment 
     if environment == 'production':
-        proxy = 'https://5et90kbva4.execute-api.us-east-1.amazonaws.com/latest/search/'
+        # proxy = 'https://5et90kbva4.execute-api.us-east-1.amazonaws.com/latest/search/'
+        proxy = 'https://dcapi.stack.rdc.library.northwestern.edu/search/'
+        print(proxy)
     if environment == 'staging':
-        proxy = 'https://bxzhc8nucl.execute-api.us-east-1.amazonaws.com/latest/search/'
+        # proxy = 'https://bxzhc8nucl.execute-api.us-east-1.amazonaws.com/latest/search/'
+        proxy = 'https://dcapi.stack.rdc-staging.library.northwestern.edu/search/'
     # create an es instance 
     # added ssl and port 443 to see if it solves timeout issue
     es = elasticsearch.Elasticsearch(proxy, send_get_body_as='POST', timeout=30, max_retries=10, retry_on_timeout=True)
