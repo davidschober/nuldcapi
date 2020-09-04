@@ -2,6 +2,7 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
+
 def get_fields_from_string(field_string):
     """returns a list from a comma separated string"""
     return [f.strip() for f in field_string.split(',')]
@@ -176,4 +177,56 @@ def save_as_csv(headers, data, output_file):
         writer.writerow(headers)
         for row in data:
             writer.writerow(row)
+
+def fileset_query_matching(match):
+
+    query = {
+        "size": "1000",
+        "query": {
+             "bool": {
+                "must": [
+                    {"term": {"model.name.keyword": "FileSet"}},
+                    {
+                        "wildcard": {
+                            "label.keyword": {
+                                "value": match 
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    return query
+
+def works_with_multiple_filesets_query():
+    query =  {
+            "query": {
+                "bool": {
+                    "filter": {
+                        "script": {
+                            "script": {
+                                "lang": "painless",
+                                "source": "doc['member_ids.keyword'].values.length >= 2"
+                                }
+                            }
+                        },
+                    "must": [
+                        {"term": {"model.name.keyword": "Image"}},
+                        ]
+                    }
+                }
+            }
+    return query
+
+def filter_works_by_fileset_matching(match, work_results):
+    """Matches a fileset name against match. This function is used to grab all filesets matching a wildcard if the results have said fileset, then it will return a generator with those works"""
+    file_results = get_search_results('production', fileset_query_matching(match))
+    file_ids = [f.get('_id') for f in file_results]
+    works = []
+    for work in work_results:
+        if any(fid in file_ids for fid in work.get('_source').get('member_ids')):
+            works.append(work)
+    return works
+
 
