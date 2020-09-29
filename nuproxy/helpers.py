@@ -2,6 +2,7 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
+
 def get_fields_from_string(field_string):
     """returns a list from a comma separated string"""
     return [f.strip() for f in field_string.split(',')]
@@ -20,17 +21,16 @@ def get_search_results(environment, query):
 
     # pick an environment 
     if environment == 'production':
-        # proxy = 'https://5et90kbva4.execute-api.us-east-1.amazonaws.com/latest/search/'
         proxy = 'https://dcapi.stack.rdc.library.northwestern.edu/search/'
         print(proxy)
     if environment == 'staging':
-        # proxy = 'https://bxzhc8nucl.execute-api.us-east-1.amazonaws.com/latest/search/'
         proxy = 'https://dcapi.stack.rdc-staging.library.northwestern.edu/search/'
     # create an es instance 
     # added ssl and port 443 to see if it solves timeout issue
     es = elasticsearch.Elasticsearch(proxy, send_get_body_as='POST', timeout=30, max_retries=10, retry_on_timeout=True)
     # return the results 
-    return helpers.scan(es, index='common', query=query)
+    # return es.search(index='common', body=query)
+    return helpers.scan(es, query=query, index='common')
 
 def build_collection_query(collection_id):
     """ Build a query for a collection based on ID. This is just
@@ -176,4 +176,55 @@ def save_as_csv(headers, data, output_file):
         writer.writerow(headers)
         for row in data:
             writer.writerow(row)
+
+def fileset_title_matching(match):
+
+    query = {
+        "size": "500",
+        "query": {
+             "bool": {
+                "must": [
+                    {"term": {"model.name.keyword": "FileSet"}},
+                    {
+                        "wildcard": {
+                            "simple_title.keyword": {
+                                "value": match 
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    return query
+
+def works_with_multiple_filesets_query():
+    """ returns a query that looks for works with multiple filesets"""
+    query =  {
+            "query": {
+                "bool": {
+                    "filter": {
+                        "script": {
+                            "script": {
+                                "lang": "painless",
+                                "source": "doc['member_ids.keyword'].values.length >= 2"
+                                }
+                            }
+                        },
+                    "must": [
+                        {"term": {"model.name.keyword": "Image"}},
+                        ]
+                    }
+                }
+            }
+    return query
+
+def filter_works_by_fileset_matching(environment, match, work_results):
+    """Matches a fileset name against match. This function is used to grab all filesets matching a wildcard if the results have said fileset, then it will return a generator with those works"""
+    file_results = get_search_results(environment, fileset_title_matching(match))
+    file_ids = [f.get('_id') for f in file_results]
+    for work in work_results:
+        if any(fid in file_ids for fid in work.get('_source').get('member_ids')):
+           yield work 
+
 
