@@ -1,6 +1,6 @@
 from setuptools import setup
 # This is the skeleton replace "NAME" with the name of the project
-setup(name='nuproxy helpers',
+setup(name='nuproxy',
         version='0.1',
         description='put some text here',
         url='put the url of git',
@@ -14,7 +14,7 @@ setup(name='nuproxy helpers',
             ],
         #These are used instead of bin packages
         entry_points = {
-            'console_scripts': ['collection_csv=nuproxy.commandline:main'],
+            'console_scripts': ['dc2csv=nuproxy.dc2csv:main'],
             },
         include_package_data=True,
         zip_safe=False)
