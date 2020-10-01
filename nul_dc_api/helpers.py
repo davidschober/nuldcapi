@@ -2,7 +2,6 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
-
 def get_fields_from_string(field_string):
     """returns a list from a comma separated string"""
     return [f.strip() for f in field_string.split(',')]
