@@ -1,4 +1,4 @@
-from nuproxy import helpers
+from nul_dc_api import helpers
 from docopt import docopt
 
 def main():
