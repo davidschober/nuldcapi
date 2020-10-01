@@ -1,7 +1,7 @@
 from nul_dc_api import helpers
 from docopt import docopt
 
-def main():
+def dc2csv():
     """DC2CSV:
     USAGE:
       dc2csv -c <collection_id> [(-f <fields> | -a) -e <environment>] <output>
@@ -17,9 +17,8 @@ def main():
     id, title, permalink, subject(.label), thumbnail_url, creator(.label), collection(.title),
     iiif_manifest, member_ids,
     """
-    args = docopt(main.__doc__, version='.1') 
-    print(args)
-    query = helpers.build_collection_query(args['--collection']) 
+    args = docopt(dc2csv.__doc__, version='.1') 
+    query = helpers.query_for_collection_with_id(args['--collection']) 
     # kick it off
     if args['--allfields']:
         # If someone threw the flag, get all the fields. 
@@ -33,6 +32,6 @@ def main():
     helpers.save_as_csv(fields, data, args['<output>'])
 
 if __name__ == '__main__':
-    main()
+    dc2csv()
 
 

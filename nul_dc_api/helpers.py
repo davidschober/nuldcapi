@@ -31,34 +31,6 @@ def get_search_results(environment, query):
     # return es.search(index='common', body=query)
     return helpers.scan(es, query=query, index='common')
 
-def build_collection_query(collection_id):
-    """ Build a query for a collection based on ID. This is just
-    a helper function. ES queries can be a bit nested and gnarly, so 
-    this function just helps
-    """
-
-    query = {
-            "size": "1000",
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "match": {
-                                "model.name": "Image"
-                                }
-                            },
-                        {
-                            "match": {
-                                "collection.id": collection_id 
-                                }
-                            }
-                        ]
-                    }
-                },
-            }
-
-    return query 
-
 def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
     Special cases are handled. It returns a simple string 
@@ -176,7 +148,35 @@ def save_as_csv(headers, data, output_file):
         for row in data:
             writer.writerow(row)
 
-def fileset_title_matching(match):
+def query_for_collection_with_id(collection_id):
+    """ Build a query for a collection based on ID. This is just
+    a helper function. ES queries can be a bit nested and gnarly, so 
+    this function just helps
+    """
+
+    query = {
+            "size": "1000",
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "model.name": "Image"
+                                }
+                            },
+                        {
+                            "match": {
+                                "collection.id": collection_id 
+                                }
+                            }
+                        ]
+                    }
+                },
+            }
+
+    return query 
+
+def query_fileset_title_matching(match):
 
     query = {
         "size": "500",
@@ -197,7 +197,7 @@ def fileset_title_matching(match):
         }
     return query
 
-def works_with_multiple_filesets_query():
+def query_works_with_multiple_filesets():
     """ returns a query that looks for works with multiple filesets"""
     query =  {
             "query": {
@@ -219,8 +219,10 @@ def works_with_multiple_filesets_query():
     return query
 
 def filter_works_by_fileset_matching(environment, match, work_results):
-    """Matches a fileset name against match. This function is used to grab all filesets matching a wildcard if the results have said fileset, then it will return a generator with those works"""
-    file_results = get_search_results(environment, fileset_title_matching(match))
+    """Matches a fileset name against match. This function is used to grab all filesets 
+    matching a wildcard if the results have said fileset, then it will return a generator 
+    with those works"""
+    file_results = get_search_results(environment, query_fileset_title_matching(match))
     file_ids = [f.get('_id') for f in file_results]
     for work in work_results:
         if any(fid in file_ids for fid in work.get('_source').get('member_ids')):
