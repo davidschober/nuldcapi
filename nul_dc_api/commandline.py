@@ -31,6 +31,28 @@ def dc2csv():
     data = helpers.get_results_as_list(results, fields) 
     helpers.save_as_csv(fields, data, args['<output>'])
 
+def dcfilesmatch():
+    """dcfilesmatch:
+    Gets multifile works with default filenames matching the match e.g. *.tif
+
+    USAGE:
+    dcfilesmatch [-m <match> -f <fields> -e <env>] <output>
+
+    OPTIONS:
+    -m <match>, --match <match>     match a fileset title with wildcard [default: *.tif]
+    -f <fields>, --fields <fields>  comma separated [default: id,title,permalink,collection.title,member_ids]
+    -e <env>, --env <env>           environment [default: production]
+    -h, --help                      display this help
+    """
+
+    args = docopt(dcfilesmatch.__doc__, version='.1')
+    fields = args['--fields'].split(',')
+    fids = helpers.get_fileset_ids_with_title_matching(args['--env'], args['--match'])
+    works = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets())
+    results = helpers.filter_works_by_fileset_matching(works, fids)
+    data = helpers.get_results_as_list(results, fields)
+    helpers.save_as_csv(fields, data, args['<output>'])
+
 if __name__ == '__main__':
     dc2csv()
 
