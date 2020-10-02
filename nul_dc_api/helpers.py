@@ -227,7 +227,7 @@ def query_works_with_multiple_filesets():
 def get_fileset_ids_with_title_matching(environment, match):
     """ Returns a list of ids with titles matching a wildcard. e.g. '*.tif' to
     find all filesets that still have a title with 'tif' in it."""
-
+   
     file_results = get_search_results(environment, query_fileset_title_matching(match))
     return [f.get('_id') for f in file_results]
 
