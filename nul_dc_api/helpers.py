@@ -2,12 +2,16 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
-def get_fields_from_string(field_string):
-    """returns a list from a comma separated string"""
-    return [f.strip() for f in field_string.split(',')]
-
 def format_for_csv(item):
-    # returns a list of items as a string delimited by the delimiter
+    """Adds a pipe delimiter so that a CSV prints pretty
+    
+    ## Example
+    >>> format_for_csv(['alist', 'alist2', 'alist3'])
+    'alist | alist2 | alist3'
+    >>> format_for_csv(['a string'])
+    'a string'
+    """
+    
     if type(item) is list: 
         return ' | '.join([str(i) for i in item])
     else:
@@ -35,38 +39,27 @@ def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
     Special cases are handled. It returns a simple string 
 
-
     ## Example
-
     >>> source = {'title':{'primary':['title1','title2'],'alternate':['alt1','alt2']}, 
     ...          'thumbnail_url':'http://thumb', 
     ...          'list_field':['1','2','3'],
     ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
     ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
     ...          'string':'string'}
-
-
     >>> flatten_metadata(source, 'title')
     'title1 | title2 | alt1 | alt2'
-
     >>> flatten_metadata(source, 'title.primary')
     'title1 | title2'
-
     >>> flatten_metadata(source, 'dict_field.label')
     'dict_label'
-
     >>> flatten_metadata(source, 'string')
     'string'
-
     >>> flatten_metadata(source, 'thumbnail_url')
     'http://thumb/full/!300,300/0/default.jpg'
-
     >>> flatten_metadata(source, 'list_of_dicts.label')
     'label1 | label2'
-
     >>> flatten_metadata(source, 'list_field')
     '1 | 2 | 3'
-
     """
 
     field_data = source_dict.get(field)
@@ -77,7 +70,6 @@ def flatten_metadata(source_dict, field):
         # Note, this could work to join any multi-dimensional field hard, but I'm not 
         # That makes sense. 
         field_metadata  = [title for title_lists in field_data.values() for title in title_lists]
-        
 
     if field == 'permalink':
         # prepend the resolver url to the front of the ark
@@ -125,6 +117,12 @@ def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
     This function flattens all nested data ham-fistedly, favoring labels over URIs for
     all metadata. Any list elements are separated by a semi-colon and turned to a string. 
+    
+    ## Example
+    >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
+    ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
+    >>> list(get_results_as_list(res, ['key','key3']))
+    [['1', '3'], ['None', '1-3']]
     """
 
     for work in search_results:
@@ -136,6 +134,14 @@ def get_all_fields_from_set(search_results):
     """ returns a flat, unique list of all fields from a search query. This can be fed back
     into a fresh query result to flatten the results for a CSV. It is not as efficient as 
     passing fields directly as you have to make two queries
+    
+    ## Example
+    >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
+    ...     {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
+    >>> k = get_all_fields_from_set(res)
+    >>> k.sort()
+    >>> print(k)
+    ['key', 'key1', 'key2', 'key3']
     """
 
     return list(set([field for work in search_results for field in work.get('_source').keys()]))
@@ -218,14 +224,27 @@ def query_works_with_multiple_filesets():
             }
     return query
 
-def filter_works_by_fileset_matching(environment, match, work_results):
+def get_fileset_ids_with_title_matching(environment, match):
+    """ Returns a list of ids with titles matching a wildcard. e.g. '*.tif' to
+    find all filesets that still have a title with 'tif' in it."""
+
+    file_results = get_search_results(environment, query_fileset_title_matching(match))
+    return [f.get('_id') for f in file_results]
+
+def filter_works_by_fileset_matching(work_results, fileset_id_list):
     """Matches a fileset name against match. This function is used to grab all filesets 
     matching a wildcard if the results have said fileset, then it will return a generator 
-    with those works"""
-    file_results = get_search_results(environment, query_fileset_title_matching(match))
-    file_ids = [f.get('_id') for f in file_results]
+    with those works
+
+    ## Example
+    >>> works = [{'_source':{'member_ids':['1','2','3']}},
+    ...     {'_source':{'member_ids':['5','6','7']}},
+    ...     {'_source':{'member_ids':['2','3','4']}}]
+    >>> fids = ['1','2']
+    >>> list(filter_works_by_fileset_matching(works,fids))
+    [{'_source': {'member_ids': ['1', '2', '3']}}, {'_source': {'member_ids': ['2', '3', '4']}}]
+    """
+
     for work in work_results:
-        if any(fid in file_ids for fid in work.get('_source').get('member_ids')):
+        if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
            yield work 
-
-

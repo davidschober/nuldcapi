@@ -19,3 +19,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 dc2csv = 'nul_dc_api.commandline:dc2csv'
+dcfilesmatch = 'nul_dc_api.commandline:dcfilesmatch'
