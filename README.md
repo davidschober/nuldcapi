@@ -23,13 +23,13 @@ See all options
 
 get just a couple of fields from the collection
 
-`$ dc2csv -c <collection_id> -f id,title,subject,permalink,thumbnail_url
+`$ dc2csv -c <collection_id> -f id,title,subject,permalink,thumbnail_url`
 
 **dcfilesmatch**: Looks for multi-file works and compares them to filesets matching a wildcard. This is used to generate TOC TODO spreadsheets.
 
 Grab all works that have filesets with \*.tif in the title
 
-`$ dcfilesmatch <output>
+`$ dcfilesmatch <output>`
 
 ## Using helpers in a script
 
