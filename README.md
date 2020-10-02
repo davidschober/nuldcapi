@@ -51,6 +51,12 @@ There's some rudimentary sanity-checking doctests. Run them with
 
 `python -m python -m doctest -v nul_dc_api/helpers.py`
 
+or 
+
+`./tests/run_tests.sh`
+
 Or if you're using poetry
 
 `poetry run python -m doctest -v nul_dc_api/helpers.py`
+
+`poetry run ./tests/run_tests.sh`
