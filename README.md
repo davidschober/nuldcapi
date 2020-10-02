@@ -5,21 +5,30 @@ A set of functions and sample CLI scripts to make dealing with data in our the n
 
 ## Quickstart / Install
 Install with PIP
+
 `pip install git+https://github.com/davidschober/nul-dc-api.git`
 
 ## Included Commandline Scripts 
 
+**dc2csv**: takes dc metadata from a collection and flattens it to a spreadsheet
+
+
 Turn a collection to CSV
+
 `$ dc2csv -c <collection_id> <output>`
 
 See all options
+
 `$ dc2csv --help`
 
 get just a couple of fields from the collection
 
 `$ dc2csv -c <collection_id> -f id,title,subject,permalink,thumbnail_url
 
+**dcfilesmatch**: Looks for multi-file works and compares them to filesets matching a wildcard. This is used to generate TOC TODO spreadsheets.
+
 Grab all works that have filesets with \*.tif in the title
+
 `$ dcfilesmatch <output>
 
 ## Using helpers in a script
@@ -39,6 +48,7 @@ Mostly this is just a bunch of quick and dirty helper functions. They will grow 
 This is built on Python 3.8.x and the elasticsearch library. Poetry was used for dependancy management and packaging. It makes life way easier than it used to be. Seriously, use it. 
 
 There's some rudimentary sanity-checking doctests. Run them with
+
 `python -m python -m doctest -v nul_dc_api/helpers.py`
 
 Or if you're using poetry
