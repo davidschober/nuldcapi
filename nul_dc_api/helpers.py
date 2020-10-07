@@ -105,7 +105,7 @@ def flatten_metadata(source_dict, field):
         field_data = source_dict.get(field)
 
         if type(field_data) is list:
-            field_metadata = [meta.get(key) for meta in field_data]
+            field_metadata = [format_for_csv(meta.get(key)) for meta in field_data]
         elif type(field_data) is dict:
             field_metadata = format_for_csv(field_data.get(key))
         else:
