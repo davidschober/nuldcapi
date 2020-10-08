@@ -96,7 +96,7 @@ def dc2xml():
         fieldmap = args['--map'].split(',')
         #verify we can zip them
         if len(fields) != len(fieldmap):
-            quit('ERROR: the fieldmap and fields do not have the same number of elements')
+            raise SystemExit('ERROR: the fieldmap and fields do not have the same number of elements')
 
     query = helpers.query_for_query_string('Image', args['--query'])
     res = helpers.get_search_results(args['--env'], query)
