@@ -7,6 +7,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "dicttoxml"
+version = "1.7.4"
+description = "Converts a Python dictionary or other native data type into a valid XML string."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "docopt"
 version = "0.6.2"
 description = "Pythonic argument parser, that will make you smile"
@@ -56,12 +64,15 @@ socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "8b636f5801b0c5553a9184e57b311b3340e29047478301e0ce1fcc963e5ea0b1"
+content-hash = "2ce78b2a96e47652a8e49cb385d3855bac6acdbcc90ba54a828a5b8102994769"
 
 [metadata.files]
 certifi = [
     {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
     {file = "certifi-2020.6.20.tar.gz", hash = "sha256:5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3"},
+]
+dicttoxml = [
+    {file = "dicttoxml-1.7.4.tar.gz", hash = "sha256:ea44cc4ec6c0f85098c57a431a1ee891b3549347b07b7414c8a24611ecf37e45"},
 ]
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
