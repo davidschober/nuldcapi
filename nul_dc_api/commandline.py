@@ -73,6 +73,37 @@ def dcfilesmatch():
     data = helpers.get_results_as_list(results, fields)
     helpers.save_as_csv(fields, data, args['<output>'])
 
+def dc2xml():
+    """dc2xml:
+    Gets results and formats them as simple xml based on field names. You can also
+    Map fields using a fieldmap. 
+
+    USAGE:
+    dc2xml -q <query> [-f <fields> -m <map> -e <env>] <output>
+
+    OPTIONS:
+    -q <query>, --query <query>     match a fileset title with wildcard [default: *.tif]
+    -f <fields>, --fields <fields>  comma separated [default: id,title,subject.label,permalink,collection.title]
+    -e <env>, --env <env>           environment [default: production]
+    -m <map>, --map <map>           a list of fields to map
+    -h, --help                      display this help
+    """
+    
+    args = docopt(dc2xml.__doc__, version='.1')
+    fields = args['--fields'].split(',')
+    fieldmap = args['--map']
+    if fieldmap:
+        fieldmap = args['--map'].split(',')
+        #verify we can zip them
+        if len(fields) != len(fieldmap):
+            quit('ERROR: the fieldmap and fields do not have the same number of elements')
+
+    query = helpers.query_for_query_string('Image', args['--query'])
+    res = helpers.get_search_results(args['--env'], query)
+    res_dict = helpers.results_to_simple_dict(res, fields, fieldmap)
+    
+    helpers.save_xml(res_dict, args['<output>'])
+
 if __name__ == '__main__':
     dc2csv()
 

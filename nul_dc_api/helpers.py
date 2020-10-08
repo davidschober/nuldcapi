@@ -14,7 +14,7 @@ def format_for_csv(item):
 
     if type(item) is list: 
         return ' | '.join([str(i) for i in item])
-    else:
+    else: 
         return str(item)
 
 def get_search_results(environment, query):
@@ -235,3 +235,24 @@ def filter_works_by_fileset_matching(work_results, fileset_id_list):
     for work in work_results:
         if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
             yield work 
+
+def results_to_simple_dict(results, fields, fieldmap=None):
+    """Takes a list of formatted results and a set of fields and saves it as an xml file. 
+    return dicttoxml.dicttoxml(mapped_results, attr_type=False)
+    """
+    
+    results_list = get_results_as_list(results, fields)
+    # if there's a fieldmap, use that
+    if fieldmap:
+        fields = fieldmap
+    # create a generator so that we can reserve memory on large datasets
+    return (dict(zip(fields,work_meta)) for work_meta in results_list)
+   
+def save_xml(res_dict, output_file):
+    """takes results as a list of dicts and writes them out to xml"""
+    import dicttoxml
+
+    xml = dicttoxml.dicttoxml(res_dict, attr_type=False)
+    with open(output_file, 'wb') as xmlfile:
+        xmlfile.write(xml)
+    
