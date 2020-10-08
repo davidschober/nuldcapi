@@ -4,14 +4,14 @@ import unicodecsv as csv
 
 def format_for_csv(item):
     """Adds a pipe delimiter so that a CSV prints pretty
-    
+
     ## Example
     >>> format_for_csv(['alist', 'alist2', 'alist3'])
     'alist | alist2 | alist3'
     >>> format_for_csv(['a string'])
     'a string'
     """
-    
+
     if type(item) is list: 
         return ' | '.join([str(i) for i in item])
     else:
@@ -105,7 +105,7 @@ def flatten_metadata(source_dict, field):
         field_data = source_dict.get(field)
 
         if type(field_data) is list:
-            field_metadata = [meta.get(key) for meta in field_data]
+            field_metadata = [format_for_csv(meta.get(key)) for meta in field_data]
         elif type(field_data) is dict:
             field_metadata = format_for_csv(field_data.get(key))
         else:
@@ -117,7 +117,7 @@ def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
     This function flattens all nested data ham-fistedly, favoring labels over URIs for
     all metadata. Any list elements are separated by a semi-colon and turned to a string. 
-    
+
     ## Example
     >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
     ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
@@ -134,7 +134,7 @@ def get_all_fields_from_set(search_results):
     """ returns a flat, unique list of all fields from a search query. This can be fed back
     into a fresh query result to flatten the results for a CSV. It is not as efficient as 
     passing fields directly as you have to make two queries
-    
+
     ## Example
     >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
     ...     {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
@@ -154,53 +154,40 @@ def save_as_csv(headers, data, output_file):
         for row in data:
             writer.writerow(row)
 
-def query_for_collection_with_id(collection_id):
-    """ Build a query for a collection based on ID. This is just
-    a helper function. ES queries can be a bit nested and gnarly, so 
-    this function just helps
+def query_for_query_string(model, match):
+    """ Uses teh query string query to return results. Examples on the elasticsearch
+    site <https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html>
+
+    Examples:
+        >>> query_for_query_string('Image', '"Chicago" AND "New York"')
+        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': '"Chicago" AND "New York"'}}]}}}
+        
+        >>> #Colection with poster somewhere (Note had to double escape to show. Not sure how
+        >>> #To deal with that in python
+        >>> query_for_query_string('Image', 'collection.\*:Poster*')
+        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.\\\\*:Poster*'}}]}}}
+        
+        >>> #Collection matching a specific ID
+        >>> query_for_query_string('Image', 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a')
+        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a'}}]}}}
+
+        >>> #Collection with either Smakey and Bear OR a date range in date
+        >>> query_for_query_string('Image', 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]')
+        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]'}}]}}}
     """
 
     query = {
-            "size": "1000",
+            "size": "500",
             "query": {
                 "bool": {
                     "must": [
-                        {
-                            "match": {
-                                "model.name": "Image"
-                                }
-                            },
-                        {
-                            "match": {
-                                "collection.id": collection_id 
-                                }
-                            }
-                        ]
-                    }
-                },
-            }
-
-    return query 
-
-def query_fileset_title_matching(match):
-
-    query = {
-        "size": "500",
-        "query": {
-             "bool": {
-                "must": [
-                    {"term": {"model.name.keyword": "FileSet"}},
-                    {
-                        "wildcard": {
-                            "simple_title.keyword": {
-                                "value": match 
-                                }
-                            }
-                        }
+                        {"match": {"model.name": model}},
+                        {"query_string": {"query": match}}
                     ]
+                    }
                 }
             }
-        }
+
     return query
 
 def query_works_with_multiple_filesets():
@@ -227,8 +214,8 @@ def query_works_with_multiple_filesets():
 def get_fileset_ids_with_title_matching(environment, match):
     """ Returns a list of ids with titles matching a wildcard. e.g. '*.tif' to
     find all filesets that still have a title with 'tif' in it."""
-   
-    file_results = get_search_results(environment, query_fileset_title_matching(match))
+    
+    file_results = get_search_results(environment, query_for_query_string('FileSet', match))
     return [f.get('_id') for f in file_results]
 
 def filter_works_by_fileset_matching(work_results, fileset_id_list):
@@ -247,4 +234,4 @@ def filter_works_by_fileset_matching(work_results, fileset_id_list):
 
     for work in work_results:
         if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
-           yield work 
+            yield work 

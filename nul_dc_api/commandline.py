@@ -4,21 +4,40 @@ from docopt import docopt
 def dc2csv():
     """DC2CSV:
     USAGE:
-      dc2csv -c <collection_id> [(-f <fields> | -a) -e <environment>] <output>
+      dc2csv (-c <collection_id> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
 
     OPTIONS:
       -h --help                     Show this screen.
-      -c --collection <collection>  Collection ID (e.g. 1c2e2200-c12d-4c7f-8b87-a935c349898a)
-      -f --fields <fields>          A comma-separated list of fields [default: id,title,permalink,subject.label]
+      -c --collection <collection>  Collection ID! (e.g. 1c2e2200-c12d-4c7f-8b87-a935c349898a)
+      -q --query <query>            Query string style query (e.g. "New York"+Chicago)
+      -f --fields <fields>          A comma-separated list of fields 
+                                    [default: id,title,permalink,subject.label]
       -e --env <env>                environment to run against [default: production]
       -a --allfields                Get all available fields. Ineffiecient. Use sparingly.
 
     COMMON FIELDS:
-    id, title, permalink, subject(.label), thumbnail_url, creator(.label), collection(.title),
-    iiif_manifest, member_ids,
+    id, title, permalink, subject(.label), thumbnail_url, creator(.label), 
+    collection(.title), iiif_manifest, member_ids,
+
+    EXAMPLES:
+    Get all works from the collection with ID 
+    $ dc2csv -c 1c2e2200-c12d-4c7f-8b87-a935c349898a ~/test.csv
+    
+    Get all works from a collection with "poster" somewhere in the title
+    $ dc2csv -q 'collection.\*:Poster*' ~/test.csv
+
+    Get some works that have "smokey" and "bear" in the description and were 
+    created between 1930 and 1937
+    $ dc2csv -q 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]' ~/test.csv
     """
     args = docopt(dc2csv.__doc__, version='.1') 
-    query = helpers.query_for_collection_with_id(args['--collection']) 
+
+    if args['--collection']:
+        # Set the query to the collection ID
+        args['--query'] = f'collection.id:{args["--collection"]}'
+
+    query = helpers.query_for_query_string('Image', args['--query'])
+
     # kick it off
     if args['--allfields']:
         # If someone threw the flag, get all the fields. 
@@ -27,6 +46,7 @@ def dc2csv():
 
     else:
         fields = args['--fields'].split(',')
+        
     results = helpers.get_search_results(args['--env'], query) 
     data = helpers.get_results_as_list(results, fields) 
     helpers.save_as_csv(fields, data, args['<output>'])
@@ -47,7 +67,7 @@ def dcfilesmatch():
 
     args = docopt(dcfilesmatch.__doc__, version='.1')
     fields = args['--fields'].split(',')
-    fids = helpers.get_fileset_ids_with_title_matching(args['--env'], args['--match'])
+    fids = helpers.get_fileset_ids_with_title_matching(args['--env'], f"simple_title:{args['--match']}")
     works = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets())
     results = helpers.filter_works_by_fileset_matching(works, fids)
     data = helpers.get_results_as_list(results, fields)

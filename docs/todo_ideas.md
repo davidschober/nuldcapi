@@ -32,3 +32,27 @@ Possibly use pandas
 
 https://stackoverflow.com/questions/25186148/creating-dataframe-from-elasticsearch-results#41092377
 
+
+## Useful old queries
+
+def query_fileset_title_matching(match):
+
+    query = {
+            "size": "500",
+            "query": {
+                "bool": {
+                    "must": [
+                        {"term": {"model.name.keyword": "FileSet"}},
+                        {
+                            "wildcard": {
+                                "simple_title.keyword": {
+                                    "value": match 
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+    return query
+

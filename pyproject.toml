@@ -10,6 +10,7 @@ python = "^3.8"
 unicodecsv = "^0.14.1"
 elasticsearch = "^7.9.1"
 docopt = "^0.6.2"
+dicttoxml = "^1.7.4"
 
 [tool.poetry.dev-dependencies]
 
