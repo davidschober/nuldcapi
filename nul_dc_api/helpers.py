@@ -237,8 +237,14 @@ def filter_works_by_fileset_matching(work_results, fileset_id_list):
             yield work 
 
 def results_to_simple_dict(results, fields, fieldmap=None):
-    """Takes a list of formatted results and a set of fields and saves it as an xml file. 
-    return dicttoxml.dicttoxml(mapped_results, attr_type=False)
+    """Takes a list of formatted results and a set of fields and maps to a simple dict.
+    This can be passed to something like dicttoxml to generate xml. 
+
+    EXAMPLE:
+    >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
+    ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
+    >>> list(results_to_simple_dict(res, ['key','key2'], ['newfield','newfield2']))
+    [{'newfield': '1', 'newfield2': '2'}, {'newfield': 'None', 'newfield2': '1-2'}]
     """
     
     results_list = get_results_as_list(results, fields)
