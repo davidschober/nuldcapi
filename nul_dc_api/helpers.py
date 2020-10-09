@@ -20,14 +20,10 @@ def get_search_results(environment, query):
     # return es.search(index='common', body=query)
     return helpers.scan(es, query=query, index='common')
 
-def flatten_and_join(string_or_list, separator):
+def flatten_list(li):
     """Flattens nested lists"""
-    if isinstance(string_or_list, list):
-        flat_list = sum(([str(x)] if not isinstance(x, list) else flatten_list(x)
+    return sum(([str(x)] if not isinstance(x, list) else flatten_list(x)
                 for x in li), [])
-        return separator.join(flat_list)
-
-    return str(string_or_list)
 
 def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
@@ -85,7 +81,7 @@ def flatten_metadata(source_dict, field):
     if isinstance(field_data, list) and isinstance(field_data[0], dict):
         field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields]
     
-    return flatten_and_join(field_metadata, ' | ') 
+    return ' | '.join(flatten_list(field_metadata)) if isinstance(field_metadata, list) else str(field_metadata)
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
