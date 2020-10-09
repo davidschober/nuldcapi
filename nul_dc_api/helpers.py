@@ -1,8 +1,6 @@
 import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
-import itertools
-
 
 def get_search_results(environment, query):
     """Takes an environment and a query and returns an iterable of all results
@@ -22,10 +20,14 @@ def get_search_results(environment, query):
     # return es.search(index='common', body=query)
     return helpers.scan(es, query=query, index='common')
 
-def flatten_list(li):
+def flatten_and_join(string_or_list, separator):
     """Flattens nested lists"""
-    return sum(([str(x)] if not isinstance(x, list) else flatten_list(x)
+    if isinstance(string_or_list, list):
+        flat_list = sum(([str(x)] if not isinstance(x, list) else flatten_list(x)
                 for x in li), [])
+        return separator.join(flat_list)
+
+    return str(string_or_list)
 
 def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
@@ -60,8 +62,8 @@ def flatten_metadata(source_dict, field):
     find_fields = ['label', 'title', 'primary', 'alternate']
 
     if '-raw' in field:
-        field =  field.rstrip('-json')
-        field_metadata = str(source_dict.get(field.rstrip('-json')))
+        field =  field.rstrip('-raw')
+        field_metadata = str(source_dict.get(field.rstrip('-raw')))
     
     if field == 'permalink':
         # prepend the resolver url to the front of the ark
@@ -83,7 +85,7 @@ def flatten_metadata(source_dict, field):
     if isinstance(field_data, list) and isinstance(field_data[0], dict):
         field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields]
     
-    return ' | '.join(flatten_list(field_metadata)) if isinstance(field_metadata, list) else str(field_metadata)
+    return flatten_and_join(field_metadata, ' | ') 
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
