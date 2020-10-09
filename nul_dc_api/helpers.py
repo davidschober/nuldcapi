@@ -81,7 +81,9 @@ def flatten_metadata(source_dict, field):
     if isinstance(field_data, list) and isinstance(field_data[0], dict):
         field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields]
     
-    return ' | '.join(flatten_list(field_metadata)) if isinstance(field_metadata, list) else str(field_metadata)
+    return (' | '.join(flatten_list(field_metadata)) 
+                if isinstance(field_metadata, list) 
+                else str(field_metadata))
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
