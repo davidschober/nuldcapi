@@ -11,7 +11,7 @@ def dc2csv():
       -c --collection <collection>  Collection ID! (e.g. 1c2e2200-c12d-4c7f-8b87-a935c349898a)
       -q --query <query>            Query string style query (e.g. "New York"+Chicago)
       -f --fields <fields>          A comma-separated list of fields 
-                                    [default: id,title,permalink,subject.label]
+                                    [default: id,title,permalink,subject]
       -e --env <env>                environment to run against [default: production]
       -a --allfields                Get all available fields. Ineffiecient. Use sparingly.
 
@@ -83,7 +83,7 @@ def dc2xml():
 
     OPTIONS:
     -q <query>, --query <query>     match a fileset title with wildcard [default: *.tif]
-    -f <fields>, --fields <fields>  comma separated [default: id,title,subject.label,permalink,collection.title]
+    -f <fields>, --fields <fields>  comma separated [default: id,title,subject,permalink,collection]
     -e <env>, --env <env>           environment [default: production]
     -m <map>, --map <map>           a list of fields to map
     -h, --help                      display this help
