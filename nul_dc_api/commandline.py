@@ -11,12 +11,12 @@ def dc2csv():
       -c --collection <collection>  Collection ID! (e.g. 1c2e2200-c12d-4c7f-8b87-a935c349898a)
       -q --query <query>            Query string style query (e.g. "New York"+Chicago)
       -f --fields <fields>          A comma-separated list of fields 
-                                    [default: id,title,permalink,subject]
+                                    [default: id,title,permalink,collection,subject]
       -e --env <env>                environment to run against [default: production]
       -a --allfields                Get all available fields. Ineffiecient. Use sparingly.
 
     COMMON FIELDS:
-    id, title, permalink, subject(.label), thumbnail_url, creator(.label), 
+    id, title, permalink, subject(.label), thumbnail_url, creator(.uri), 
     collection(.title), iiif_manifest, member_ids,
 
     EXAMPLES:

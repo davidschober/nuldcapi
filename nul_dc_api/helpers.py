@@ -20,11 +20,6 @@ def get_search_results(environment, query):
     # return es.search(index='common', body=query)
     return helpers.scan(es, query=query, index='common')
 
-def flatten_list(li):
-    """Flattens nested lists"""
-    return sum(([str(x)] if not isinstance(x, list) else flatten_list(x)
-                for x in li), [])
-
 def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
     Special cases are handled. It returns a simple string 
@@ -79,12 +74,13 @@ def flatten_metadata(source_dict, field):
     if isinstance(field_data, dict):
         field_metadata = [v for k,v in field_data.items() if k in find_fields]
     # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
-    if isinstance(field_data, list) and isinstance(field_data[0], dict):
+    if isinstance(field_data, list) and all(isinstance(d, dict) for d in field_data):
         field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields]
     
-    return (' | '.join(flatten_list(field_metadata)) 
-            if isinstance(field_metadata, list) 
-            else str(field_metadata))
+    # take all metadata and flatten_to_list    
+    flatten_to_list = lambda l: sum(map(flatten_to_list,l),[]) if isinstance(l,list) else [str(l)]    
+    
+    return ' | '.join(flatten_to_list(field_metadata)) 
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
