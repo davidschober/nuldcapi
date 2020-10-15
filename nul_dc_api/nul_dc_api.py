@@ -2,21 +2,6 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
-def format_for_csv(item):
-    """Adds a pipe delimiter so that a CSV prints pretty
-
-    ## Example
-    >>> format_for_csv(['alist', 'alist2', 'alist3'])
-    'alist | alist2 | alist3'
-    >>> format_for_csv(['a string'])
-    'a string'
-    """
-
-    if type(item) is list: 
-        return ' | '.join([str(i) for i in item])
-    else:
-        return str(item)
-
 def get_search_results(environment, query):
     """Takes an environment and a query and returns an iterable of all results
     using the 'scan' function in es.helpers. Scan is an efficient pager.
@@ -64,13 +49,13 @@ def flatten_metadata(source_dict, field):
 
     field_data = source_dict.get(field)
     field_metadata = field_data
+    # Most folks are looking for the human readable data, so filter for those on basic fields (e.g. title)
+    find_fields = ['label', 'title', 'primary', 'alternate']
 
-    if field == 'title':
-        #join a bunch of title together, regardless of primary or alternate
-        # Note, this could work to join any multi-dimensional field hard, but I'm not 
-        # That makes sense. 
-        field_metadata  = [title for title_lists in field_data.values() for title in title_lists]
-
+    if '-raw' in field:
+        field =  field.rstrip('-raw')
+        field_metadata = str(source_dict.get(field.rstrip('-raw')))
+    
     if field == 'permalink':
         # prepend the resolver url to the front of the ark
         field_metadata = f"https://n2t.net/{field_data}"
@@ -79,39 +64,23 @@ def flatten_metadata(source_dict, field):
         # This just makes resolve to a jpg. I should make this configurable at the commandline
         field_metadata = f"{field_data}/full/!300,300/0/default.jpg"
 
-    if '-json' in field:
-        # Get pseudo json back and separate lists with pipes. This ugly bit is for a prototype of meadow
-        field =  field.rstrip('-json')
-        if type(field_data) is list:
-            field_metadata = [json for json in source_dict.get(field)]
-        else:
-            field_metadata = source_dict.get(field)
-
-    if '-values' in field:
-        # Get pseudo json back and separate lists with pipes. This ugly bit is for a prototype of meadow
-        # I think I can make this generic
-        field =  field.rstrip('-values')
-        field_data = source_dict.get(field)
-        if type(field_data) is list:
-            field_metadata = [tuple(meta.values()) for meta in source_dict.get(field)]
-        elif type(field_data) is dict:
-            field_metadata = list(field_data.values())
-        else:
-            field_metadata = field_data
-
     if '.' in field:
         # This allows you to pull from nested 
         field, key = field.split('.')
         field_data = source_dict.get(field)
+        find_fields = [key]
 
-        if type(field_data) is list:
-            field_metadata = [format_for_csv(meta.get(key)) for meta in field_data]
-        elif type(field_data) is dict:
-            field_metadata = format_for_csv(field_data.get(key))
-        else:
-            field_metadata = field_data
-
-    return format_for_csv(field_metadata)
+    # This deals with the nested nature of our metadata 
+    if isinstance(field_data, dict):
+        field_metadata = [v for k,v in field_data.items() if k in find_fields]
+    # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
+    if isinstance(field_data, list) and all(isinstance(d, dict) for d in field_data):
+        field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields]
+    
+    # take all metadata and flatten_to_list    
+    flatten_to_list = lambda l: sum(map(flatten_to_list,l),[]) if isinstance(l,list) else [str(l)]    
+    
+    return ' | '.join(flatten_to_list(field_metadata)) 
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
@@ -235,3 +204,30 @@ def filter_works_by_fileset_matching(work_results, fileset_id_list):
     for work in work_results:
         if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
             yield work 
+
+def results_to_simple_dict(results, fields, fieldmap=None):
+    """Takes a list of formatted results and a set of fields and maps to a simple dict.
+    This can be passed to something like dicttoxml to generate xml. 
+
+    EXAMPLE:
+    >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
+    ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
+    >>> list(results_to_simple_dict(res, ['key','key2'], ['newfield','newfield2']))
+    [{'newfield': '1', 'newfield2': '2'}, {'newfield': 'None', 'newfield2': '1-2'}]
+    """
+    
+    results_list = get_results_as_list(results, fields)
+    # if there's a fieldmap, use that
+    if fieldmap:
+        fields = fieldmap
+    # create a generator so that we can reserve memory on large datasets
+    return (dict(zip(fields,work_meta)) for work_meta in results_list)
+   
+def save_xml(res_dict, output_file):
+    """takes results as a list of dicts and writes them out to xml"""
+    import dicttoxml
+
+    xml = dicttoxml.dicttoxml(res_dict, attr_type=False)
+    with open(output_file, 'wb') as xmlfile:
+        xmlfile.write(xml)
+    
