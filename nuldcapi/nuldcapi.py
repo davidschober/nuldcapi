@@ -140,6 +140,7 @@ def get_results_as_list(search_results, fields):
         work_metadata = work.get('_source')
         yield [flatten_metadata(work_metadata, field) for field in fields]
 
+
 def query_for_query_string(model, match):
     """ Uses teh query string query to return results. Examples on the elasticsearch
     site <https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html>
@@ -152,7 +153,6 @@ def query_for_query_string(model, match):
         >>> #To deal with that in python
         >>> query_for_query_string('Image', 'collection.\*:Poster*')
         {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.\\\\*:Poster*'}}]}}}
-        
         >>> #Collection matching a specific ID
         >>> query_for_query_string('Image', 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a')
         {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a'}}]}}}
