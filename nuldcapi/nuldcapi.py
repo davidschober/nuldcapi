@@ -53,8 +53,8 @@ def flatten_metadata(source_dict, field):
     find_fields = ['label', 'title', 'primary', 'alternate']
 
     if '-raw' in field:
-        field =  field.rstrip('-raw')
-        field_metadata = str(source_dict.get(field.rstrip('-raw')))
+        field =  field.split('-')[0]
+        field_metadata = str(source_dict.get(field))
     
     if field == 'permalink':
         # prepend the resolver url to the front of the ark
