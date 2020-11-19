@@ -1,3 +1,4 @@
+from nuldcapi import terms
 import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
@@ -55,10 +56,13 @@ def flatten_metadata(source_dict, field):
     if '-raw' in field:
         field =  field.split('-')[0]
         field_metadata = str(source_dict.get(field))
+        
     # This is to prototype our mass update tool
     if '-batch' in field:
         field = field.split('-')[0]
-        field_metadata = [f"{meta.get('role')}:{meta.get('uri')}" for meta in source_dict.get(field)]
+        t = terms.marc_relators() 
+        # Use the "TERMS" dict to transform from term label to term code
+        field_metadata = [f"{t.get(meta.get('role'), meta.get('role'))}:{meta.get('uri')}" for meta in source_dict.get(field)]
 
     if field == 'permalink':
         # prepend the resolver url to the front of the ark
