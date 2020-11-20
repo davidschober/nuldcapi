@@ -1,4 +1,4 @@
-from nuldcapi import nuldcapi 
+from nuldcapi import helpers 
 from docopt import docopt
 
 def dc2csv():
@@ -36,20 +36,20 @@ def dc2csv():
         # Set the query to the collection ID
         args['--query'] = f'collection.id:{args["--collection"]}'
 
-    query = nuldcapi.query_for_query_string('Image', args['--query'])
+    query = helpers.query_for_query_string('Image', args['--query'])
 
     # kick it off
     if args['--allfields']:
         # If someone threw the flag, get all the fields. 
-        fields = nuldcapi.get_all_fields_from_set(nuldcapi.get_search_results(args['--env'], query))
+        fields = helpers.get_all_fields_from_set(helpers.get_search_results(args['--env'], query))
         fields.sort()
 
     else:
         fields = args['--fields'].split(',')
         
-    results = nuldcapi.get_search_results(args['--env'], query) 
-    data = nuldcapi.get_results_as_list(results, fields) 
-    nuldcapi.save_as_csv(fields, data, args['<output>'])
+    results = helpers.get_search_results(args['--env'], query) 
+    data = helpers.get_results_as_list(results, fields) 
+    helpers.save_as_csv(fields, data, args['<output>'])
 
 def dcfilesmatch():
     """dcfilesmatch:
@@ -67,11 +67,11 @@ def dcfilesmatch():
 
     args = docopt(dcfilesmatch.__doc__, version='.1')
     fields = args['--fields'].split(',')
-    fids = nuldcapi.get_fileset_ids_with_title_matching(args['--env'], f"simple_title:{args['--match']}")
-    works = nuldcapi.get_search_results(args['--env'], nuldcapi.query_works_with_multiple_filesets())
-    results = nuldcapi.filter_works_by_fileset_matching(works, fids)
-    data = nuldcapi.get_results_as_list(results, fields)
-    nuldcapi.save_as_csv(fields, data, args['<output>'])
+    fids = helpers.get_fileset_ids_with_title_matching(args['--env'], f"simple_title:{args['--match']}")
+    works = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets())
+    results = helpers.filter_works_by_fileset_matching(works, fids)
+    data = helpers.get_results_as_list(results, fields)
+    helpers.save_as_csv(fields, data, args['<output>'])
 
 def dc2xml():
     """dc2xml:
@@ -98,11 +98,11 @@ def dc2xml():
         if len(fields) != len(fieldmap):
             raise SystemExit('ERROR: the fieldmap and fields do not have the same number of elements')
 
-    query = nuldcapi.query_for_query_string('Image', args['--query'])
-    res = nuldcapi.get_search_results(args['--env'], query)
-    res_dict = nuldcapi.results_to_simple_dict(res, fields, fieldmap)
+    query = helpers.query_for_query_string('Image', args['--query'])
+    res = helpers.get_search_results(args['--env'], query)
+    res_dict = helpers.results_to_simple_dict(res, fields, fieldmap)
     
-    nuldcapi.save_xml(res_dict, args['<output>'])
+    helpers.save_xml(res_dict, args['<output>'])
 
 if __name__ == '__main__':
     dc2csv()

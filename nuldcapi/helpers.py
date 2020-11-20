@@ -52,14 +52,17 @@ def flatten_metadata(source_dict, field):
     field_metadata = field_data
     # Most folks are looking for the human readable data, so filter for those on basic fields (e.g. title)
     find_fields = ['label', 'title', 'primary', 'alternate']
+    
+    #split the field to see if we have special requests 
+    split_field = field.split('-')
 
-    if '-raw' in field:
-        field =  field.split('-')[0]
+    if split_field[-1] == 'raw':
+        field =  split_field[0]
         field_metadata = str(source_dict.get(field))
         
     # This is to prototype our mass update tool
-    if '-batch' in field:
-        field = field.split('-')[0]
+    if split_field[-1] == 'batch':
+        field = split_field[0]
         t = terms.marc_relators() 
         # Use the "TERMS" dict to transform from term label to term code
         field_metadata = [f"{t.get(meta.get('role'), meta.get('role'))}:{meta.get('uri')}" for meta in source_dict.get(field)]
