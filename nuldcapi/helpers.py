@@ -48,7 +48,7 @@ def flatten_metadata(source_dict, field):
     '1 | 2 | 3'
     """
 
-    field_data = source_dict.get(field)
+    field_data = source_dict.get(field, "")
     field_metadata = field_data
     # Most folks are looking for the human readable data, so filter for those on basic fields (e.g. title)
     find_fields = ['label', 'title', 'primary', 'alternate']
@@ -58,14 +58,19 @@ def flatten_metadata(source_dict, field):
 
     if split_field[-1] == 'raw':
         field =  split_field[0]
-        field_metadata = str(source_dict.get(field))
+        field_metadata = str(source_dict.get(field,""))
         
     # This is to prototype our mass update tool
     if split_field[-1] == 'batch':
         field = split_field[0]
         t = terms.marc_relators() 
+        c = terms.coded_terms()
         # Use the "TERMS" dict to transform from term label to term code
-        field_metadata = [f"{t.get(meta.get('role'), meta.get('role'))}:{meta.get('uri')}" for meta in source_dict.get(field)]
+        if field in ['contributor', 'subject']:
+            field_metadata = [f"{t.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field)]
+        if field in ['admin_set']:
+            f = source_dict.get(field)
+            field_metadata = [f"{c.get(f.get('label'), c.get(f.get('title')[0]))}"]
 
     if field == 'permalink':
         # prepend the resolver url to the front of the ark
@@ -78,15 +83,15 @@ def flatten_metadata(source_dict, field):
     if '.' in field:
         # This allows you to pull from nested 
         field, key = field.split('.')
-        field_data = source_dict.get(field)
+        field_data = source_dict.get(field,"")
         find_fields = [key]
 
     # This deals with the nested nature of our metadata 
     if isinstance(field_data, dict):
-        field_metadata = [v for k,v in field_data.items() if k in find_fields]
+        field_metadata = [v for k,v in field_data.items() if k in find_fields if v]
     # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
     if isinstance(field_data, list) and all(isinstance(d, dict) for d in field_data):
-        field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields]
+        field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields if v]
     
     # take all metadata and flatten_to_list    
     flatten_to_list = lambda l: sum(map(flatten_to_list,l),[]) if isinstance(l,list) else [str(l)]    

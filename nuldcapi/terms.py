@@ -1,58 +1,109 @@
+def coded_terms():
+
+
+    terms = [{
+            "id": "DONE",
+            "label": "Done"
+            },
+        {
+            "id": "IN PROGRESS",
+            "label": "In Progress"
+            },
+        {
+            "id": "NOT STARTED",
+            "label": "Not Started"
+            },
+        {
+            "id": "SPECIAL_COLLECTIONS",
+            "label": "Charles Deering McCormick Library of Special Collections"
+            },
+        {
+            "id": "FACULTY_COLLECTIONS",
+            "label": "Faculty Collections"
+            },
+        {
+            "id": "GOVERNMENT_AND_GEOGRAPHIC_INFORMATION_COLLECTION",
+            "label": "Government & Geographic Information Collection"
+            },
+        {
+            "id": "HERSKOVITS_LIBRARY",
+            "label": "Herskovits Library of African Studies"
+            },
+        {
+            "id": "MUSIC_LIBRARY",
+            "label": "Music Library"
+            },
+        {
+            "id": "TRANSPORTATION_LIBRARY",
+            "label": "Transportation Library"
+            },
+        {
+            "id": "UNIVERSITY_ARCHIVES",
+            "label": "University Archives"
+            },
+        {
+            "id": "UNIVERSITY_MAIN_LIBRARY",
+            "label": "University (MAIN) Library"
+            }
+        ]
+        # return a lookup dictbased on label
+    return dict(zip([t.get('label') for t in terms], [t.get('id') for t in terms]))
+
 def marc_relators():
     """returns a dict of marc relators"""
 
     marc_relators = {"abridger":"abr",
-        "nul_contributor":"nctb",
-        "art copyist":"acp",
-        "actor":"act",
-        "art director":"adi",
-        "adapter":"adp",
-        "author of afterword, colophon, etc.":"aft",
-        "analyst":"anl",
-        "animator":"anm",
-        "annotator":"ann",
-        "bibliographic antecedent":"ant",
-        "appellee":"ape",
-        "appellant":"apl",
-        "applicant":"app",
-        "author in quotations or text abstracts":"aqt",
-        "architect":"arc",
-        "artistic director":"ard",
-        "arranger":"arr",
-        "artist":"art",
-        "assignee":"asg",
-        "associated name":"asn",
-        "autographer":"ato",
-        "attributed name":"att",
-        "auctioneer":"auc",
-        "author of dialog":"aud",
-        "author of introduction, etc.":"aui",
-        "screenwriter":"aus",
-        "author":"aut",
-        "binding designer":"bdd",
-        "bookjacket designer":"bjd",
-        "book designer":"bkd",
-        "book producer":"bkp",
-        "blurb writer":"blw",
-        "binder":"bnd",
-        "bookplate designer":"bpd",
-        "broadcaster":"brd",
-        "braille embosser":"brl",
-        "bookseller":"bsl",
-        "caster":"cas",
-        "conceptor":"ccp",
-        "choreographer":"chr",
-        "collaborator":"-clb",
-        "client":"cli",
-        "calligrapher":"cll",
-        "colorist":"clr",
-        "collotyper":"clt",
-        "commentator":"cmm",
-        "composer":"cmp",
-        "compositor":"cmt",
-        "conductor":"cnd",
-        "cinematographer":"cng",
-        "censor":"cns",
+            "nul_contributor":"nctb",
+            "art copyist":"acp",
+            "actor":"act",
+            "art director":"adi",
+            "adapter":"adp",
+            "author of afterword, colophon, etc.":"aft",
+            "analyst":"anl",
+            "animator":"anm",
+            "annotator":"ann",
+            "bibliographic antecedent":"ant",
+            "appellee":"ape",
+            "appellant":"apl",
+            "applicant":"app",
+            "author in quotations or text abstracts":"aqt",
+            "architect":"arc",
+            "artistic director":"ard",
+            "arranger":"arr",
+            "artist":"art",
+            "assignee":"asg",
+            "associated name":"asn",
+            "autographer":"ato",
+            "attributed name":"att",
+            "auctioneer":"auc",
+            "author of dialog":"aud",
+            "author of introduction, etc.":"aui",
+            "screenwriter":"aus",
+            "author":"aut",
+            "binding designer":"bdd",
+            "bookjacket designer":"bjd",
+            "book designer":"bkd",
+            "book producer":"bkp",
+            "blurb writer":"blw",
+            "binder":"bnd",
+            "bookplate designer":"bpd",
+            "broadcaster":"brd",
+            "braille embosser":"brl",
+            "bookseller":"bsl",
+            "caster":"cas",
+            "conceptor":"ccp",
+            "choreographer":"chr",
+            "collaborator":"-clb",
+            "client":"cli",
+            "calligrapher":"cll",
+            "colorist":"clr",
+            "collotyper":"clt",
+            "commentator":"cmm",
+            "composer":"cmp",
+            "compositor":"cmt",
+            "conductor":"cnd",
+            "cinematographer":"cng",
+    "censor":"cns",
         "contestant-appellee":"coe",
         "collector":"col",
         "compiler":"com",
