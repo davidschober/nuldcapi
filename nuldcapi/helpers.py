@@ -21,6 +21,7 @@ def filter_works_by_fileset_matching(work_results, fileset_id_list):
         if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
             yield work 
 
+
 def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
     Special cases are handled. It returns a simple string 
@@ -47,55 +48,63 @@ def flatten_metadata(source_dict, field):
     >>> flatten_metadata(source, 'list_field')
     '1 | 2 | 3'
     """
+    # Helpers to handle special fields
+    is_special_field = lambda f, split, match: f.split(split)[-1]==match
+    handle_special_field = lambda f, split, func, source_dict: func(f.split(split)[0], source_dict)
+    transform_raw = lambda f, source_dict: str(source_dict.get(f, ""))
 
-    field_data = source_dict.get(field, "")
-    field_metadata = field_data
-    # Most folks are looking for the human readable data, so filter for those on basic fields (e.g. title)
-    find_fields = ['label', 'title', 'primary', 'alternate']
-    
-    #split the field to see if we have special requests 
-    split_field = field.split('-')
-
-    if split_field[-1] == 'raw':
-        field =  split_field[0]
-        field_metadata = str(source_dict.get(field,""))
-        
-    # This is to prototype our mass update tool
-    if split_field[-1] == 'batch':
-        field = split_field[0]
-        t = terms.marc_relators() 
-        c = terms.coded_terms()
+    def transform_batch(field, marc_relators, coded_terms, source_dict):
+        """Transforms to a meadow style batch"""
         # Use the "TERMS" dict to transform from term label to term code
         if field in ['contributor', 'subject']:
-            field_metadata = [f"{t.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field)]
-        if field in ['admin_set']:
+            field_metadata = [f"{marc_relators.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field)]
+        elif field in ['admin_set']:
             f = source_dict.get(field)
-            field_metadata = [f"{c.get(f.get('label'), c.get(f.get('title')[0]))}"]
+            field_metadata = [f"{coded_terms.get(f.get('label'), coded_terms.get(f.get('title')[0]))}"]
+        else:
+            field_metadata = source_dict.get(field)
+        return field_metadata
+        
+    def handle_standard_field(field, source_dict):
+        """Handles standard fields and flattens nested data"""
+        #see if there's a dot notation
+        field, delimiter, key = field.partition('.')
+        # If we're using dot notation, filter on that otherwise look for the standard set of keys
+        if key:
+            find_fields = [key]
+        else:
+            find_fields = ['label', 'title', 'primary', 'alternate'] 
 
-    if field == 'permalink':
+        field_metadata = source_dict.get(field,"")
+
+        if isinstance(field_metadata, dict):
+            field_metadata = [v for k,v in field_metadata.items() if k in find_fields if v]
+        # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
+        if isinstance(field_metadata, list) and all(isinstance(d, dict) for d in field_metadata):
+            field_metadata = [v for i in field_metadata for k,v in i.items() if k in find_fields if v]
+        return field_metadata
+        
+    #split the field to see if we have special requests 
+    if is_special_field(field, '-', 'raw'):
+        field_metadata = transform_raw(field.split('-')[0], source_dict)
+    
+    # This is to prototype our mass update tool
+    elif is_special_field(field, '-', 'batch'):
+        field_metadata = transform_batch(field.split('-')[0], terms.marc_relators(), terms.coded_terms(), source_dict)
+
+    elif field == 'permalink':
         # prepend the resolver url to the front of the ark
-        field_metadata = f"https://n2t.net/{field_data}"
+        field_metadata = f"https://n2t.net/{source_dict.get(field)}"
 
-    if field == 'thumbnail_url':
+    elif field == 'thumbnail_url':
         # This just makes resolve to a jpg. I should make this configurable at the commandline
-        field_metadata = f"{field_data}/full/!300,300/0/default.jpg"
-
-    if '.' in field:
-        # This allows you to pull from nested 
-        field, key = field.split('.')
-        field_data = source_dict.get(field,"")
-        find_fields = [key]
-
-    # This deals with the nested nature of our metadata 
-    if isinstance(field_data, dict):
-        field_metadata = [v for k,v in field_data.items() if k in find_fields if v]
-    # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
-    if isinstance(field_data, list) and all(isinstance(d, dict) for d in field_data):
-        field_metadata = [v for i in field_data for k,v in i.items() if k in find_fields if v]
+        field_metadata = f"{source_dict.get(field)}/full/!300,300/0/default.jpg"
+    else:
+        # deal with everything else
+        field_metadata = handle_standard_field(field, source_dict)
     
     # take all metadata and flatten_to_list    
     flatten_to_list = lambda l: sum(map(flatten_to_list,l),[]) if isinstance(l,list) else [str(l)]    
-    
     return ' | '.join(flatten_to_list(field_metadata)) 
 
 def get_search_results(environment, query):
@@ -129,8 +138,9 @@ def get_all_fields_from_set(search_results):
     >>> print(k)
     ['key', 'key1', 'key2', 'key3']
     """
-
+    
     return list(set([field for work in search_results for field in work.get('_source').keys()]))
+
 
 def get_fileset_ids_with_title_matching(environment, match):
     """ Returns a list of ids with titles matching a wildcard. e.g. '*.tif' to
@@ -148,7 +158,7 @@ def get_results_as_list(search_results, fields):
     >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
     ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
     >>> list(get_results_as_list(res, ['key','key3']))
-    [['1', '3'], ['None', '1-3']]
+    [['1', '3'], ['', '1-3']]
     """
 
     for work in search_results:
@@ -221,7 +231,7 @@ def results_to_simple_dict(results, fields, fieldmap=None):
     >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
     ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
     >>> list(results_to_simple_dict(res, ['key','key2'], ['newfield','newfield2']))
-    [{'newfield': '1', 'newfield2': '2'}, {'newfield': 'None', 'newfield2': '1-2'}]
+    [{'newfield': '1', 'newfield2': '2'}, {'newfield': '', 'newfield2': '1-2'}]
     """
     
     results_list = get_results_as_list(results, fields)
