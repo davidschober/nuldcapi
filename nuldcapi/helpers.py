@@ -49,15 +49,19 @@ def flatten_metadata(source_dict, field):
     '1 | 2 | 3'
     """
     # Helpers to handle special fields
-    is_special_field = lambda f, split, match: f.split(split)[-1]==match
-    handle_special_field = lambda f, split, func, source_dict: func(f.split(split)[0], source_dict)
-    transform_raw = lambda f, source_dict: str(source_dict.get(f, ""))
+
+    def is_special_field(field, split, match):
+        """Check to see if it matches on the split"""
+        return field.split(split)[-1]==match
+    def transform_raw(field, source_dict): 
+        """get raw field and stringify"""
+        return str(source_dict.get(field,""))
 
     def transform_batch(field, marc_relators, coded_terms, source_dict):
         """Transforms to a meadow style batch"""
         # Use the "TERMS" dict to transform from term label to term code
         if field in ['contributor', 'subject']:
-            field_metadata = [f"{marc_relators.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field)]
+            field_metadata = [f"{marc_relators.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field) if meta.get('uri')]
         elif field in ['admin_set']:
             f = source_dict.get(field)
             field_metadata = [f"{coded_terms.get(f.get('label'), coded_terms.get(f.get('title')[0]))}"]
@@ -74,9 +78,7 @@ def flatten_metadata(source_dict, field):
             find_fields = [key]
         else:
             find_fields = ['label', 'title', 'primary', 'alternate'] 
-
         field_metadata = source_dict.get(field,"")
-
         if isinstance(field_metadata, dict):
             field_metadata = [v for k,v in field_metadata.items() if k in find_fields if v]
         # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists

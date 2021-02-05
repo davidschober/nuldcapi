@@ -4,7 +4,8 @@ from docopt import docopt
 def dc2csv():
     """DC2CSV:
     USAGE:
-      dc2csv (-c <collection_id> | -q <query>) [(-f <fields> | -a | -m) -e <environment>] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a | -m) -e <environment>] <output>
 
     OPTIONS:
       -h --help                     Show this screen.
@@ -36,7 +37,9 @@ def dc2csv():
 
     if args['--collection']:
         # Set the query to the collection ID
+        print(args['--collection'])
         args['--query'] = f'collection.id:{args["--collection"]}'
+        print(args['--query'])
 
     query = helpers.query_for_query_string('Image', args['--query'])
 
@@ -51,6 +54,7 @@ def dc2csv():
         
     results = helpers.get_search_results(args['--env'], query) 
     data = helpers.get_results_as_list(results, fields) 
+    #print(list(data))
     helpers.save_as_csv(fields, data, args['<output>'])
 
 def dcfilesmatch():
