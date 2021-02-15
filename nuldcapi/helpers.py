@@ -3,6 +3,7 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
+# Filters
 def filter_works_by_fileset_matching(work_results, fileset_id_list):
     """Matches a fileset name against match. This function is used to grab all filesets 
     matching a wildcard if the results have said fileset, then it will return a generator 
@@ -21,9 +22,48 @@ def filter_works_by_fileset_matching(work_results, fileset_id_list):
         if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
             yield work 
 
+# Formatters
+def format_raw(field, source_dict): 
+    """get raw field and stringify"""
+    return str(source_dict.get(field,""))
+
+def format_with_relators(field, source_dict, marc_relators=terms.marc_relators()):
+    """add relators to fields that have them"""
+    field = field.split('-')[0]
+    return [f"{marc_relators.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field) if meta.get('uri')]
+
+def format_with_coded_term(field, source_dict, coded_terms=terms.coded_terms()):
+    """ Add coded terms to fields that have them"""
+    f = source_dict.get(field.split('-')[0]) 
+    return [f"{coded_terms.get(f.get('label'), coded_terms.get(f.get('title')[0]))}"]
+
+def format_default(field, source_dict):
+    """Handles standard fields and flattens nested data"""
+    #see if there's a dot notation
+    field, delimiter, key = field.partition('.')
+    default_fields = 'label title primary alternate' 
+    # If we're using dot notation, filter on that otherwise look for the standard set of keys
+    find_fields = key.split() or default_fields.split() 
+    
+    field_metadata = source_dict.get(field,"")
+    
+    if isinstance(field_metadata, dict):
+        field_metadata = [v for k,v in field_metadata.items() if k in find_fields if v]
+    # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
+    if isinstance(field_metadata, list) and all(isinstance(d, dict) for d in field_metadata):
+        field_metadata = [v for i in field_metadata for k,v in i.items() if k in find_fields if v]
+    return field_metadata
+
+def format_permalink(field, source_dict):
+    """formats permalink"""
+    return f"https://n2t.net/{source_dict.get(field)}"
+
+def format_thumbnail(field, source_dict):
+    """formats thumnbnail"""
+    return f"{source_dict.get(field)}/full/!300,300/0/default.jpg"
 
 def flatten_metadata(source_dict, field):
-    """ Takes a nested dictionary of a work's metadata, gets and flattens a field. 
+    """ Takes a nested dictionary of a works metadata, gets and flattens a field. 
     Special cases are handled. It returns a simple string 
 
     ## Example
@@ -48,63 +88,18 @@ def flatten_metadata(source_dict, field):
     >>> flatten_metadata(source, 'list_field')
     '1 | 2 | 3'
     """
+
     # Helpers to handle special fields
+    handler = {'raw' : format_raw,
+            'contributor-batch' : format_with_relators,
+            'subject-batch' : format_with_relators,
+            'admin_set-batch' : format_with_coded_term,
+            'permalink' : format_permalink,
+            'thumbnail_url' : format_thumbnail,
+            } 
 
-    def is_special_field(field, split, match):
-        """Check to see if it matches on the split"""
-        return field.split(split)[-1]==match
-    def transform_raw(field, source_dict): 
-        """get raw field and stringify"""
-        return str(source_dict.get(field,""))
-
-    def transform_batch(field, marc_relators, coded_terms, source_dict):
-        """Transforms to a meadow style batch"""
-        # Use the "TERMS" dict to transform from term label to term code
-        if field in ['contributor', 'subject']:
-            field_metadata = [f"{marc_relators.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field) if meta.get('uri')]
-        elif field in ['admin_set']:
-            f = source_dict.get(field)
-            field_metadata = [f"{coded_terms.get(f.get('label'), coded_terms.get(f.get('title')[0]))}"]
-        else:
-            field_metadata = source_dict.get(field)
-        return field_metadata
-        
-    def handle_standard_field(field, source_dict):
-        """Handles standard fields and flattens nested data"""
-        #see if there's a dot notation
-        field, delimiter, key = field.partition('.')
-        # If we're using dot notation, filter on that otherwise look for the standard set of keys
-        if key:
-            find_fields = [key]
-        else:
-            find_fields = ['label', 'title', 'primary', 'alternate'] 
-        field_metadata = source_dict.get(field,"")
-        if isinstance(field_metadata, dict):
-            field_metadata = [v for k,v in field_metadata.items() if k in find_fields if v]
-        # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
-        if isinstance(field_metadata, list) and all(isinstance(d, dict) for d in field_metadata):
-            field_metadata = [v for i in field_metadata for k,v in i.items() if k in find_fields if v]
-        return field_metadata
-        
-    #split the field to see if we have special requests 
-    if is_special_field(field, '-', 'raw'):
-        field_metadata = transform_raw(field.split('-')[0], source_dict)
-    
-    # This is to prototype our mass update tool
-    elif is_special_field(field, '-', 'batch'):
-        field_metadata = transform_batch(field.split('-')[0], terms.marc_relators(), terms.coded_terms(), source_dict)
-
-    elif field == 'permalink':
-        # prepend the resolver url to the front of the ark
-        field_metadata = f"https://n2t.net/{source_dict.get(field)}"
-
-    elif field == 'thumbnail_url':
-        # This just makes resolve to a jpg. I should make this configurable at the commandline
-        field_metadata = f"{source_dict.get(field)}/full/!300,300/0/default.jpg"
-    else:
-        # deal with everything else
-        field_metadata = handle_standard_field(field, source_dict)
-    
+    #Return the proper formatted metadata
+    field_metadata = handler.get(field, format_default)(field, source_dict)
     # take all metadata and flatten_to_list    
     flatten_to_list = lambda l: sum(map(flatten_to_list,l),[]) if isinstance(l,list) else [str(l)]    
     return ' | '.join(flatten_to_list(field_metadata)) 
@@ -115,16 +110,12 @@ def get_search_results(environment, query):
     """
 
     # pick an environment 
-    if environment == 'production':
-        proxy = 'https://dcapi.stack.rdc.library.northwestern.edu/search/'
-        print(proxy)
-    if environment == 'staging':
-        proxy = 'https://dcapi.stack.rdc-staging.library.northwestern.edu/search/'
-    # create an es instance 
+    proxy = {'production' : 'https://dcapi.stack.rdc.library.northwestern.edu/search/',
+            'staging' : 'https://dcapi.stack.rdc-staging.library.northwestern.edu/search/'
+            }
     # added ssl and port 443 to see if it solves timeout issue
-    es = elasticsearch.Elasticsearch(proxy, send_get_body_as='POST', timeout=30, max_retries=10, retry_on_timeout=True)
+    es = elasticsearch.Elasticsearch(proxy[environment], send_get_body_as='POST', timeout=30, max_retries=10, retry_on_timeout=True)
     # return the results 
-    # return es.search(index='common', body=query)
     return helpers.scan(es, query=query, index='common')
 
 def get_all_fields_from_set(search_results):
