@@ -4,7 +4,8 @@ from docopt import docopt
 def dc2csv():
     """DC2CSV:
     USAGE:
-      dc2csv (-c <collection_id> | -q <query>) [(-f <fields> | -a | -m) -e <environment>] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a | -m) -e <environment>] <output>
 
     OPTIONS:
       -h --help                     Show this screen.
@@ -32,10 +33,13 @@ def dc2csv():
     $ dc2csv -q 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]' ~/test.csv
     """
     args = docopt(dc2csv.__doc__, version='.1') 
+    fields = args['--fields'].split(',')
 
     if args['--collection']:
         # Set the query to the collection ID
+        print(args['--collection'])
         args['--query'] = f'collection.id:{args["--collection"]}'
+        print(args['--query'])
 
     query = helpers.query_for_query_string('Image', args['--query'])
 
@@ -44,14 +48,13 @@ def dc2csv():
         # If someone threw the flag, get all the fields. 
         fields = helpers.get_all_fields_from_set(helpers.get_search_results(args['--env'], query))
         fields.sort()
+
     if args['--meadow']:
         fields = ["id", "accession_number","collection.id","published","visibility","admin_set-batch","preservation_level","project_name","project_desc","project_proposer","project_manager","project_task_number","project_cycle","status","abstract","alternate_title","ark","box_name","box_number","caption","catalog_key","citation","description","folder_name","folder_number","identifier","keywords","legacy_identifier","notes","terms_of_use","physical_description_material","physical_description_size","provenance","publisher","related_material","rights_holder","scope_and_contents","series","source","table_of_contents","title","license.uri","rights_statement.uri","contributor-batch","creator.uri","genre.uri","language.uri","location.uri","style_period.uri","subject-batch","technique.uri","date_created","related_url"]
-
-    else:
-        fields = args['--fields'].split(',')
         
     results = helpers.get_search_results(args['--env'], query) 
     data = helpers.get_results_as_list(results, fields) 
+    #print(list(data))
     helpers.save_as_csv(fields, data, args['<output>'])
 
 def dcfilesmatch():
