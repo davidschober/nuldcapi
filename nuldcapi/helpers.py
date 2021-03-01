@@ -116,7 +116,8 @@ def get_search_results(environment, query):
     # added ssl and port 443 to see if it solves timeout issue
     es = elasticsearch.Elasticsearch(proxy[environment], send_get_body_as='POST', timeout=30, max_retries=10, retry_on_timeout=True)
     # return the results 
-    return helpers.scan(es, query=query, index='meadow')
+    # return helpers.scan(es, query=query, index='meadow')
+    return es.search(index='meadow', body={"query":query})
 
 def get_all_fields_from_set(search_results):
     """ returns a flat, unique list of all fields from a search query. This can be fed back
@@ -182,7 +183,6 @@ def query_for_query_string(model, match):
     """
 
     query = {
-            "size": "500",
             "query": {
                 "bool": {
                     "must": [
