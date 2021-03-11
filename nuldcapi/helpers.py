@@ -40,8 +40,21 @@ def format_with_coded_term(field, source_dict, coded_terms=terms.coded_terms()):
 def format_default(field, source_dict):
     """Handles standard fields and flattens nested data"""
     #see if there's a dot notation
+     
+    field_metadata = source_dict
+    for f in field.split('.'):
+        if isinstance(field_metadata, dict):
+            field_metadata = field_metadata.get(f)
+        elif isinstance(field_metadata, list) and all(isinstance(d, dict) for d in field_metadata):
+            field_metadata = [i.get(f) for i in field_metadata]
+ 
+    return field_metadata
+
+def format_default_old(field, source_dict):
+    """Handles standard fields and flattens nested data"""
+    #see if there's a dot notation
     field, delimiter, key = field.partition('.')
-    default_fields = 'label title primary alternate' 
+    default_fields = 'displayFacet label title primary alternate' 
     # If we're using dot notation, filter on that otherwise look for the standard set of keys
     find_fields = key.split() or default_fields.split() 
     
@@ -53,7 +66,6 @@ def format_default(field, source_dict):
     if isinstance(field_metadata, list) and all(isinstance(d, dict) for d in field_metadata):
         field_metadata = [v for i in field_metadata for k,v in i.items() if k in find_fields if v]
     return field_metadata
-
 def format_permalink(field, source_dict):
     """formats permalink"""
     return f"https://n2t.net/{source_dict.get(field)}"
