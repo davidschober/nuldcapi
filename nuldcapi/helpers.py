@@ -68,11 +68,13 @@ def format_default_old(field, source_dict):
     return field_metadata
 def format_permalink(field, source_dict):
     """formats permalink"""
-    return f"https://n2t.net/{source_dict.get(field)}"
+    field = format_default(field, source_dict)
+    return f"https://n2t.net/{field}"
 
 def format_thumbnail(field, source_dict):
     """formats thumnbnail"""
-    return f"{source_dict.get(field)}/full/!300,300/0/default.jpg"
+    field = format_default("representativeFileSet.url", source_dict)
+    return f"{field}/full/!300,300/0/default.jpg"
 
 def flatten_metadata(source_dict, field):
     """ Takes a nested dictionary of a works metadata, gets and flattens a field. 
@@ -106,7 +108,7 @@ def flatten_metadata(source_dict, field):
             'contributor-batch' : format_with_relators,
             'subject-batch' : format_with_relators,
             'admin_set-batch' : format_with_coded_term,
-            'permalink' : format_permalink,
+            'descriptiveMetadata.ark' : format_permalink,
             'thumbnail_url' : format_thumbnail,
             } 
 
