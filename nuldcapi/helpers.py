@@ -7,7 +7,7 @@ import unicodecsv as csv
 def filter_works_by_fileset_matching(work_results, fileset_id_list):
     """Matches a fileset name against match. This function is used to grab all filesets 
     matching a wildcard if the results have said fileset, then it will return a generator 
-    with those works
+    with those works DEPRECATED
 
     ## Example
     >>> works = [{'_source':{'member_ids':['1','2','3']}},
@@ -27,16 +27,6 @@ def format_raw(field, source_dict):
     """get raw field and stringify"""
     return str(source_dict.get(field,""))
 
-def format_with_relators(field, source_dict, marc_relators=terms.marc_relators()):
-    """add relators to fields that have them"""
-    field = field.split('-')[0]
-    return [f"{marc_relators.get(meta.get('role'), meta.get('role').upper())}:{meta.get('uri')}" for meta in source_dict.get(field) if meta.get('uri')]
-
-def format_with_coded_term(field, source_dict, coded_terms=terms.coded_terms()):
-    """ Add coded terms to fields that have them"""
-    f = source_dict.get(field.split('-')[0]) 
-    return [f"{coded_terms.get(f.get('label'), coded_terms.get(f.get('title')[0]))}"]
-
 def format_default(field, source_dict):
     """Handles standard fields and flattens nested data"""
     #see if there's a dot notation
@@ -50,26 +40,12 @@ def format_default(field, source_dict):
  
     return field_metadata
 
-def format_default_old(field, source_dict):
-    """Handles standard fields and flattens nested data"""
-    #see if there's a dot notation
-    field, delimiter, key = field.partition('.')
-    default_fields = 'displayFacet label title primary alternate' 
-    # If we're using dot notation, filter on that otherwise look for the standard set of keys
-    find_fields = key.split() or default_fields.split() 
-    
-    field_metadata = source_dict.get(field,"")
-    
-    if isinstance(field_metadata, dict):
-        field_metadata = [v for k,v in field_metadata.items() if k in find_fields if v]
-    # This makes me feel odd but sometimes lists have dicts and sometimes they're just lists
-    if isinstance(field_metadata, list) and all(isinstance(d, dict) for d in field_metadata):
-        field_metadata = [v for i in field_metadata for k,v in i.items() if k in find_fields if v]
-    return field_metadata
 def format_permalink(field, source_dict):
     """formats permalink"""
-    field = format_default(field, source_dict)
-    return f"https://n2t.net/{field}"
+
+    ark = format_default("descriptiveMetadata.ark", source_dict)
+    #permalink = format_default(field, source_dict)
+    return f"https://n2t.net/{ark}"
 
 def format_thumbnail(field, source_dict):
     """formats thumnbnail"""
@@ -105,10 +81,7 @@ def flatten_metadata(source_dict, field):
 
     # Helpers to handle special fields
     handler = {'raw' : format_raw,
-            'contributor-batch' : format_with_relators,
-            'subject-batch' : format_with_relators,
-            'admin_set-batch' : format_with_coded_term,
-            'descriptiveMetadata.ark' : format_permalink,
+            'permalink' : format_permalink,
             'thumbnail_url' : format_thumbnail,
             } 
 
@@ -132,7 +105,7 @@ def get_search_results(environment, query):
     # return the results 
     # return es.search(index='meadow', body={"query":query})
     
-    return helpers.scan(es, query=query, index='meadow')
+    return helpers.scan(es, query=query, index='meadow', size=500)
     
 
 def get_all_fields_from_set(search_results):
@@ -168,7 +141,7 @@ def get_results_as_list(search_results, fields):
     >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
     ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
     >>> list(get_results_as_list(res, ['key','key3']))
-    [['1', '3'], ['', '1-3']]
+    [['1', '3'], ['None', '1-3']]
     """
 
     for work in search_results:
@@ -183,19 +156,19 @@ def query_for_query_string(model, match):
 
     Examples:
         >>> query_for_query_string('Image', '"Chicago" AND "New York"')
-        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': '"Chicago" AND "New York"'}}]}}}
+        {'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': '"Chicago" AND "New York"'}}]}}}
         
         >>> #Colection with poster somewhere (Note had to double escape to show. Not sure how
         >>> #To deal with that in python
         >>> query_for_query_string('Image', 'collection.\*:Poster*')
-        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.\\\\*:Poster*'}}]}}}
+        {'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.\\\\*:Poster*'}}]}}}
         >>> #Collection matching a specific ID
         >>> query_for_query_string('Image', 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a')
-        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a'}}]}}}
+        {'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a'}}]}}}
 
         >>> #Collection with either Smakey and Bear OR a date range in date
         >>> query_for_query_string('Image', 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]')
-        {'size': '500', 'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]'}}]}}}
+        {'query': {'bool': {'must': [{'match': {'model.name': 'Image'}}, {'query_string': {'query': 'description:(Smokey AND Bear) OR date:[1930-01-01 TO 1937-01-01]'}}]}}}
     """
 
     query = {
@@ -211,25 +184,38 @@ def query_for_query_string(model, match):
 
     return query
 
-def query_works_with_multiple_filesets():
-    """ returns a query that looks for works with multiple filesets"""
+
+def query_works_with_multiple_filesets(model, match):
+    """ returns a query that looks for works with multiple fileset_id_list. Doesn't work yet. 
+
+
+                    "script": {
+                        "script": {
+                            "lang": "painless",
+                             "inline": "doc['fileSets'].lengthi >= 2"
+                        }
+                    },
+    """
     query =  {
             "query": {
-                "bool": {
-                    "filter": {
-                        "script": {
-                            "script": {
-                                "lang": "painless",
-                                "source": "doc['member_ids.keyword'].values.length >= 2"
+                    "bool":{
+                        "must": [
+                        {"match": {"model.name": model}},
+                        {"query_string": {"query": match}}
+                        ],
+                        "filter":[
+                            {"script": {
+                                "script": {
+                                    "lang": "painless",
+                                     "source": "doc['fileSets'].length >= 2"
                                 }
                             }
-                        },
-                    "must": [
-                        {"term": {"model.name.keyword": "Image"}},
-                        ]
+                            }
+
+                         ]
                     }
-                }
             }
+        }
     return query
 
 def results_to_simple_dict(results, fields, fieldmap=None):

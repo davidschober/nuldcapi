@@ -41,7 +41,7 @@ def dc2csv():
         args['--query'] = f'collection.id:{args["--collection"]}'
         print(args['--query'])
 
-    query = helpers.query_for_query_string('Image', args['--query'])
+    query = helpers.query_for_query_string('work', args['--query'])
 
     # kick it off
     if args['--allfields']:
@@ -73,9 +73,7 @@ def dcfilesmatch():
 
     args = docopt(dcfilesmatch.__doc__, version='.1')
     fields = args['--fields'].split(',')
-    fids = helpers.get_fileset_ids_with_title_matching(args['--env'], f"simple_title:{args['--match']}")
-    works = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets())
-    results = helpers.filter_works_by_fileset_matching(works, fids)
+    results = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets('Image', args['--match']))
     data = helpers.get_results_as_list(results, fields)
     helpers.save_as_csv(fields, data, args['<output>'])
 
