@@ -3,26 +3,6 @@ import elasticsearch
 from elasticsearch import helpers
 import unicodecsv as csv
 
-# Filters
-def filter_works_by_fileset_matching(work_results, fileset_id_list):
-    """Matches a fileset name against match. This function is used to grab all filesets 
-    matching a wildcard if the results have said fileset, then it will return a generator 
-    with those works DEPRECATED
-
-    ## Example
-    >>> works = [{'_source':{'member_ids':['1','2','3']}},
-    ...     {'_source':{'member_ids':['5','6','7']}},
-    ...     {'_source':{'member_ids':['2','3','4']}}]
-    >>> fids = ['1','2']
-    >>> list(filter_works_by_fileset_matching(works,fids))
-    [{'_source': {'member_ids': ['1', '2', '3']}}, {'_source': {'member_ids': ['2', '3', '4']}}]
-    """
-
-    for work in work_results:
-        if any(fid in fileset_id_list for fid in work.get('_source').get('member_ids')):
-            yield work 
-
-# Formatters
 def format_raw(field, source_dict): 
     """get raw field and stringify"""
     return str(source_dict.get(field,""))
@@ -105,7 +85,6 @@ def get_search_results(environment, query):
     
     return helpers.scan(es, query=query, index='meadow', size=500)
     
-
 def get_all_fields_from_set(search_results):
     """ returns a flat, unique list of all fields from a search query. This can be fed back
     into a fresh query result to flatten the results for a CSV. It is not as efficient as 
@@ -121,14 +100,6 @@ def get_all_fields_from_set(search_results):
     """
     
     return list(set([field for work in search_results for field in work.get('_source').keys()]))
-
-
-def get_fileset_ids_with_title_matching(environment, match):
-    """ Returns a list of ids with titles matching a wildcard. e.g. '*.tif' to
-    find all filesets that still have a title with 'tif' in it."""
-    
-    file_results = get_search_results(environment, query_for_query_string('FileSet', match))
-    return [f.get('_id') for f in file_results]
 
 def get_results_as_list(search_results, fields):
     """ Gets all items in a collection and returns the identified fields(list)
@@ -146,7 +117,6 @@ def get_results_as_list(search_results, fields):
         #Get the metadata dictionary
         work_metadata = work.get('_source')
         yield [flatten_metadata(work_metadata, field) for field in fields]
-
 
 def query_for_query_string(model, match):
     """ Uses teh query string query to return results. Examples on the elasticsearch
@@ -182,36 +152,18 @@ def query_for_query_string(model, match):
 
     return query
 
+def query_works_with_multiple_filesets(model, match, number_of_filesets):
+    """ returns a query that looks for works with multiple fileset_id_list. Doesn't work yet. """
 
-def query_works_with_multiple_filesets(model, match):
-    """ returns a query that looks for works with multiple fileset_id_list. Doesn't work yet. 
-
-
-                    "script": {
-                        "script": {
-                            "lang": "painless",
-                             "inline": "doc['fileSets'].lengthi >= 2"
-                        }
-                    },
-    """
-    query =  {
+    query = {
             "query": {
-                    "bool":{
-                        "must": [
+                "bool": {
+                    "must": [
                         {"match": {"model.name": model}},
                         {"query_string": {"query": match}}
                         ],
-                        "filter":[
-                            {"script": {
-                                "script": {
-                                    "lang": "painless",
-                                     "source": "doc['fileSets'].length >= 2"
-                                }
-                            }
-                            }
-
-                         ]
-                    }
+                    "filter": [{"script": {"script": "doc['fileSets.id'].values.size()>="+number_of_filesets}}]
+                }
             }
         }
     return query

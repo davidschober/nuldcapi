@@ -58,18 +58,25 @@ def dcfilesmatch():
     Gets multifile works with default filenames matching the match e.g. *.tif
 
     USAGE:
-    dcfilesmatch [-m <match> -f <fields> -e <env>] <output>
+    dcfilesmatch [-m <match> -n <number_of_filesets> -f <fields> -e <env>] <output>
 
     OPTIONS:
-    -m <match>, --match <match>     match a fileset title with wildcard [default: *.tif]
-    -f <fields>, --fields <fields>  comma separated [default: id,title,permalink,collection.title,member_ids]
+    -m --match <match>         match a fileset title with wildcard [default: fileSets.label:*.tif]
+    -n --number-of-filesets <number_of_filesets>    number of filesets [default:2] 
+    -f --fields <fields>       comma separated [default: id,title,permalink,collection.title,fileSets.label]
     -e <env>, --env <env>           environment [default: production]
     -h, --help                      display this help
+
+    EXAMPLES:
+
+    dcfilesmatch -m 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a \
+            AND fileSets.label:*.tif' -n 1 ~/Desktop/tiffiles.csv
+
     """
 
     args = docopt(dcfilesmatch.__doc__, version='.1')
     fields = args['--fields'].split(',')
-    results = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets('Image', args['--match']))
+    results = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets('work', args['--match'], args['--number-of-filesets']))
     data = helpers.get_results_as_list(results, fields)
     helpers.save_as_csv(fields, data, args['<output>'])
 
