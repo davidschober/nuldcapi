@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python -m doctest -v ../nuldcapi/helpers.py
+python -m doctest ../nuldcapi/helpers.py

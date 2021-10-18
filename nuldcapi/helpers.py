@@ -58,13 +58,11 @@ def flatten_metadata(source_dict, field):
 
     ## Example
     >>> source = {'title':{'primary':['title1','title2'],'alternate':['alt1','alt2']}, 
-    ...          'thumbnail_url':'http://thumb', 
+    ...          'representativeFileSet':{'url':'http://thumb'}, 
     ...          'list_field':['1','2','3'],
     ...          'list_of_dicts':[{'label':'label1','uri':'uri1'}, {'label':'label2','uri':'uri2'}],
     ...          'dict_field': {'label':'dict_label', 'uri':'http://uri'}, 
     ...          'string':'string'}
-    >>> flatten_metadata(source, 'title')
-    'title1 | title2 | alt1 | alt2'
     >>> flatten_metadata(source, 'title.primary')
     'title1 | title2'
     >>> flatten_metadata(source, 'dict_field.label')
@@ -226,7 +224,7 @@ def results_to_simple_dict(results, fields, fieldmap=None):
     >>> res = [{'_source': {'key':'1', 'key2':'2', 'key3':'3'}}, 
     ...    {'_source':{'key1':'1-2', 'key3':'1-3', 'key2':'1-2'}}]
     >>> list(results_to_simple_dict(res, ['key','key2'], ['newfield','newfield2']))
-    [{'newfield': '1', 'newfield2': '2'}, {'newfield': '', 'newfield2': '1-2'}]
+    [{'newfield': '1', 'newfield2': '2'}, {'newfield': 'None', 'newfield2': '1-2'}]
     """
     
     results_list = get_results_as_list(results, fields)
