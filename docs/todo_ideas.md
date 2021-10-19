@@ -1,4 +1,24 @@
 
+## 2021-03-02
+```
+es = elasticsearch.Elasticsearch('https://dcapi.stack.rdc-staging.library.northwestern.edu/search/', send_get_body_as='POST', timeout=30)
+
+### query
+q = {"query":{"bool":{"must":{"match":{"model.name":"Image"}}}}}
+#### Works
+res=es.search(index="meadow", body=q)
+l = [hit['_source'] for hit in res['hits']['hits']]
+
+#### 502s
+res=elasticsearch.helpers.scan(es, query=q, index='meadow')
+
+### Works 
+res=elasticsearch.helpers.scan(es, query=q, index='common')
+l = [r['_source'] for r in res]
+
+```
+
+## Using es dsl instead of raw es
 Generator of a scan object
 
 >>> s = Search(using=client, index='common').query('match', collection__id='c4f30015-88b5-4291-b3a6-8ac9b7c7069c').query('match', model__name="Image").scan()

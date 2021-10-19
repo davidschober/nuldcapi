@@ -5,17 +5,16 @@ def dc2csv():
     """DC2CSV:
     USAGE:
       dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
-      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a | -m) -e <environment>] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
 
     OPTIONS:
       -h --help                     Show this screen.
       -c --collection <collection>  Collection ID! (e.g. 1c2e2200-c12d-4c7f-8b87-a935c349898a)
       -q --query <query>            Query string style query (e.g. "New York"+Chicago)
       -f --fields <fields>          A comma-separated list of fields 
-                                    [default: id,title,permalink,collection,subject]
+                                    [default: id,descriptiveMetadata.title,ark,collection,descriptiveMetadata.subject.displayFacet]
       -e --env <env>                environment to run against [default: production]
       -a --allfields                Get all available fields. Ineffiecient. Use sparingly.
-      -m --meadow                   meadow style metadata dump
 
     COMMON FIELDS:
     id, title, permalink, subject(.label), thumbnail_url, creator(.uri), 
@@ -41,7 +40,7 @@ def dc2csv():
         args['--query'] = f'collection.id:{args["--collection"]}'
         print(args['--query'])
 
-    query = helpers.query_for_query_string('Image', args['--query'])
+    query = helpers.query_for_query_string('work', args['--query'])
 
     # kick it off
     if args['--allfields']:
@@ -49,9 +48,6 @@ def dc2csv():
         fields = helpers.get_all_fields_from_set(helpers.get_search_results(args['--env'], query))
         fields.sort()
 
-    if args['--meadow']:
-        fields = ["id", "accession_number","collection.id","published","visibility","admin_set-batch","preservation_level","project_name","project_desc","project_proposer","project_manager","project_task_number","project_cycle","status","abstract","alternate_title","ark","box_name","box_number","caption","catalog_key","citation","description","folder_name","folder_number","identifier","keywords","legacy_identifier","notes","terms_of_use","physical_description_material","physical_description_size","provenance","publisher","related_material","rights_holder","scope_and_contents","series","source","table_of_contents","title","license.uri","rights_statement.uri","contributor-batch","creator.uri","genre.uri","language.uri","location.uri","style_period.uri","subject-batch","technique.uri","date_created","related_url"]
-        
     results = helpers.get_search_results(args['--env'], query) 
     data = helpers.get_results_as_list(results, fields) 
     #print(list(data))
@@ -62,20 +58,25 @@ def dcfilesmatch():
     Gets multifile works with default filenames matching the match e.g. *.tif
 
     USAGE:
-    dcfilesmatch [-m <match> -f <fields> -e <env>] <output>
+    dcfilesmatch [-m <match> -n <number_of_filesets> -f <fields> -e <env>] <output>
 
     OPTIONS:
-    -m <match>, --match <match>     match a fileset title with wildcard [default: *.tif]
-    -f <fields>, --fields <fields>  comma separated [default: id,title,permalink,collection.title,member_ids]
+    -m --match <match>         match a fileset title with wildcard [default: fileSets.label:*.tif]
+    -n --number-of-filesets <number_of_filesets>    number of filesets [default:2] 
+    -f --fields <fields>       comma separated [default: id,title,permalink,collection.title,fileSets.label]
     -e <env>, --env <env>           environment [default: production]
     -h, --help                      display this help
+
+    EXAMPLES:
+
+    dcfilesmatch -m 'collection.id:1c2e2200-c12d-4c7f-8b87-a935c349898a \
+            AND fileSets.label:*.tif' -n 1 ~/Desktop/tiffiles.csv
+
     """
 
     args = docopt(dcfilesmatch.__doc__, version='.1')
     fields = args['--fields'].split(',')
-    fids = helpers.get_fileset_ids_with_title_matching(args['--env'], f"simple_title:{args['--match']}")
-    works = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets())
-    results = helpers.filter_works_by_fileset_matching(works, fids)
+    results = helpers.get_search_results(args['--env'], helpers.query_works_with_multiple_filesets('work', args['--match'], args['--number-of-filesets']))
     data = helpers.get_results_as_list(results, fields)
     helpers.save_as_csv(fields, data, args['<output>'])
 
