@@ -4,8 +4,8 @@ from docopt import docopt
 def dc2csv():
     """DC2CSV:
     USAGE:
-      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
-      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment>] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment> -v] <output>
+      dc2csv (-c <collection> | -q <query>) [(-f <fields> | -a) -e <environment> -v] <output>
 
     OPTIONS:
       -h --help                     Show this screen.
@@ -15,6 +15,7 @@ def dc2csv():
                                     [default: id,descriptiveMetadata.title,ark,collection,descriptiveMetadata.subject.displayFacet]
       -e --env <env>                environment to run against [default: production]
       -a --allfields                Get all available fields. Ineffiecient. Use sparingly.
+      -v --verbose                  print query and other info for debug 
 
     COMMON FIELDS:
     id, title, permalink, subject(.label), thumbnail_url, creator(.uri), 
@@ -36,21 +37,25 @@ def dc2csv():
 
     if args['--collection']:
         # Set the query to the collection ID
-        print(args['--collection'])
         args['--query'] = f'collection.id:{args["--collection"]}'
-        print(args['--query'])
-
+    
     query = helpers.query_for_query_string('work', args['--query'])
-
+        
     # kick it off
     if args['--allfields']:
         # If someone threw the flag, get all the fields. 
         fields = helpers.get_all_fields_from_set(helpers.get_search_results(args['--env'], query))
         fields.sort()
+    
+    if args['--verbose']:
+        print(args['--collection'])
+        print(args['--query'])
+        print(query)
+        print(fields)
+
 
     results = helpers.get_search_results(args['--env'], query) 
     data = helpers.get_results_as_list(results, fields) 
-    #print(list(data))
     helpers.save_as_csv(fields, data, args['<output>'])
 
 def dcfilesmatch():
