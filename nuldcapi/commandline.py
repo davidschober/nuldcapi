@@ -110,7 +110,7 @@ def dc2xml():
         if len(fields) != len(fieldmap):
             raise SystemExit('ERROR: the fieldmap and fields do not have the same number of elements')
 
-    query = helpers.query_for_query_string('Image', args['--query'])
+    query = helpers.query_for_query_string('Work', args['--query'])
     res = helpers.get_search_results(args['--env'], query)
     res_dict = helpers.results_to_simple_dict(res, fields, fieldmap)
     
