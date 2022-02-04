@@ -95,7 +95,7 @@ def dc2xml():
 
     OPTIONS:
     -q <query>, --query <query>     match a fileset title with wildcard [default: *.tif]
-    -f <fields>, --fields <fields>  comma separated [default: id,title,subject,permalink,collection]
+    -f <fields>, --fields <fields>  comma separated [default: id,title,creator,contributor,subject,permalink,collection.title,thumbnail_url]
     -e <env>, --env <env>           environment [default: production]
     -m <map>, --map <map>           a list of fields to map
     -h, --help                      display this help
